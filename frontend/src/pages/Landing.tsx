@@ -15,13 +15,13 @@ import {
   Activity,
   Award,
 } from 'lucide-react';
-import BorderGlow from '../components/ui/BorderGlow';
 
 // Google Maps Component
 const GoogleMapComponent: React.FC = () => {
   const mapRef = useRef<HTMLDivElement>(null);
   const [selectedClinic, setSelectedClinic] = useState<any>(null);
   const [isMapLoaded, setIsMapLoaded] = useState(false);
+  const [mapError, setMapError] = useState<string | null>(null);
 
   const clinics = [
     {
@@ -57,22 +57,34 @@ const GoogleMapComponent: React.FC = () => {
     // Load Google Maps script dynamically
     const API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
     
+    console.log('Google Maps API Key:', API_KEY ? 'Present' : 'Missing');
+    
     if (!API_KEY) {
-      console.error('Google Maps API key not found');
+      console.error('Google Maps API key not found in environment variables');
+      setMapError('Google Maps API key not configured');
       return;
     }
 
     // Check if script is already loaded
     if ((window as any).google && (window as any).google.maps) {
+      console.log('Google Maps already loaded');
       setIsMapLoaded(true);
       return;
     }
 
+    console.log('Loading Google Maps script...');
     const script = document.createElement('script');
     script.src = `https://maps.googleapis.com/maps/api/js?key=${API_KEY}&libraries=places`;
     script.async = true;
     script.defer = true;
-    script.onload = () => setIsMapLoaded(true);
+    script.onload = () => {
+      console.log('Google Maps script loaded successfully');
+      setIsMapLoaded(true);
+    };
+    script.onerror = (error) => {
+      console.error('Failed to load Google Maps script:', error);
+      setMapError('Failed to load Google Maps');
+    };
     document.head.appendChild(script);
 
     return () => {
@@ -81,13 +93,17 @@ const GoogleMapComponent: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    if (!mapRef.current || !isMapLoaded) return;
+    if (!mapRef.current || !isMapLoaded) {
+      console.log('Map not ready:', { mapRef: !!mapRef.current, isMapLoaded });
+      return;
+    }
 
     try {
+      console.log('Initializing Google Map...');
       // Initialize map with dark mode style
       const map = new (window as any).google.maps.Map(mapRef.current, {
         center: { lat: 18.5204, lng: 73.8567 },
-        zoom: 12,
+        zoom: 13,
         styles: [
           { elementType: 'geometry', stylers: [{ color: '#212121' }] },
           { elementType: 'labels.icon', stylers: [{ visibility: 'off' }] },
@@ -178,6 +194,7 @@ const GoogleMapComponent: React.FC = () => {
         zoomControl: true,
       });
 
+      console.log('Map initialized, adding markers...');
       // Add markers
       clinics.forEach((clinic) => {
         const marker = new (window as any).google.maps.Marker({
@@ -195,12 +212,37 @@ const GoogleMapComponent: React.FC = () => {
 
         marker.addListener('click', () => {
           setSelectedClinic(clinic);
+          console.log('Clinic selected:', clinic.name);
         });
       });
+      console.log('Markers added successfully');
     } catch (error) {
       console.error('Error initializing map:', error);
+      setMapError('Failed to initialize map');
     }
   }, [isMapLoaded]);
+
+  if (mapError) {
+    return (
+      <div className="w-full h-full flex items-center justify-center bg-gray-900 text-white">
+        <div className="text-center">
+          <p className="text-red-400 mb-2">Map Error</p>
+          <p className="text-sm text-gray-400">{mapError}</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isMapLoaded) {
+    return (
+      <div className="w-full h-full flex items-center justify-center bg-gray-900 text-white">
+        <div className="text-center">
+          <div className="w-8 h-8 border-4 border-primary-teal border-t-transparent rounded-full animate-spin mx-auto mb-2" />
+          <p className="text-sm text-gray-400">Loading Map...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="relative w-full h-full">
@@ -209,9 +251,11 @@ const GoogleMapComponent: React.FC = () => {
   );
 };
 
-// iPhone Mockup Component
+// iPhone Mockup Component with Interactive Features
 const IPhoneMockup: React.FC = () => {
-  const [currentStep, setCurrentStep] = useState(0);
+  const [currentScreen, setCurrentScreen] = useState<'home' | 'doctors' | 'booking' | 'success'>('home');
+  const [selectedDoctor, setSelectedDoctor] = useState<any>(null);
+  const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
   const [currentTime, setCurrentTime] = useState('');
   const [currentDate, setCurrentDate] = useState('');
 
@@ -226,7 +270,7 @@ const IPhoneMockup: React.FC = () => {
       const ampm = hours >= 12 ? 'PM' : 'AM';
       const hour12 = hours % 12 || 12;
       
-      setCurrentTime(`${hour12}:${minutes.toString().padStart(2, '0')} ${ampm}`);
+      setCurrentTime(`${hour12}:${minutes.toString().padStart(2, '0')}`);
       
       const options: Intl.DateTimeFormatOptions = { 
         weekday: 'short', 
@@ -241,158 +285,542 @@ const IPhoneMockup: React.FC = () => {
     return () => clearInterval(interval);
   }, []);
 
-  const steps = [
-    {
-      title: 'Select Doctor',
-      content: (
-        <div className="space-y-3">
-          <div className="flex items-center gap-3 p-3 bg-white rounded-lg shadow-sm">
-            <div className="w-12 h-12 rounded-full bg-primary-teal/10 flex items-center justify-center">
-              <Users className="w-6 h-6 text-primary-teal" />
-            </div>
-            <div>
-              <p className="text-sm font-semibold text-text-primary">Dr. Sarah Johnson</p>
-              <p className="text-xs text-text-secondary">Cardiologist</p>
-            </div>
-          </div>
-        </div>
-      ),
-    },
-    {
-      title: 'Choose Slot',
-      content: (
-        <div className="space-y-3">
-          <div className="grid grid-cols-3 gap-2">
-            {['10:00', '11:30', '2:00', '3:30', '4:00', '5:30'].map((time, idx) => (
-              <div
-                key={idx}
-                className={`p-2 text-center rounded-lg border shadow-sm ${
-                  idx === 1
-                    ? 'bg-primary-teal text-white border-primary-teal shadow-md'
-                    : 'bg-white border-border'
-                }`}
-              >
-                <p className="text-xs font-medium">{time}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      ),
-    },
-    {
-      title: 'Confirm',
-      content: (
-        <div className="space-y-3">
-          <div className="p-3 bg-white rounded-lg space-y-2 shadow-sm">
-            <div className="flex justify-between text-xs">
-              <span className="text-text-secondary">Doctor</span>
-              <span className="font-medium">Dr. Sarah Johnson</span>
-            </div>
-            <div className="flex justify-between text-xs">
-              <span className="text-text-secondary">Date</span>
-              <span className="font-medium">{currentDate}, 11:30 AM</span>
-            </div>
-            <div className="flex justify-between text-xs">
-              <span className="text-text-secondary">Fee</span>
-              <span className="font-medium">₹1,500</span>
-            </div>
-          </div>
-          <button className="w-full py-3 bg-primary-teal text-white rounded-xl font-medium text-sm shadow-lg hover:shadow-xl transition-shadow">
-            Confirm Appointment
-          </button>
-        </div>
-      ),
-    },
-  ];
-
+  // Auto-cycle through screens for demo
   useEffect(() => {
+    const screens: Array<'home' | 'doctors' | 'booking' | 'success'> = ['home', 'doctors', 'booking', 'success'];
+    let currentIndex = 0;
+    
     const interval = setInterval(() => {
-      setCurrentStep((prev) => (prev + 1) % steps.length);
-    }, 3000);
+      currentIndex = (currentIndex + 1) % screens.length;
+      setCurrentScreen(screens[currentIndex]);
+      
+      // Reset selections when going back to home
+      if (screens[currentIndex] === 'home') {
+        setSelectedDoctor(null);
+        setSelectedSlot(null);
+      }
+    }, 4000);
+    
     return () => clearInterval(interval);
   }, []);
 
-  return (
-    <BorderGlow
-      edgeSensitivity={30}
-      glowColor="111 207 151"
-      backgroundColor="transparent"
-      borderRadius={48}
-      glowRadius={50}
-      glowIntensity={1.2}
-      coneSpread={25}
-      animated={false}
-      colors={['#6FCF97', '#2FA084', '#38bdf8']}
-      fillOpacity={0.3}
-      className="w-fit"
-    >
-      <div className="relative">
-        {/* iPhone Frame with enhanced shadow */}
-        <div className="relative w-[280px] h-[570px] bg-gradient-to-b from-gray-800 to-black rounded-[3rem] p-3 shadow-[0_20px_60px_rgba(0,0,0,0.8)]">
-          {/* Notch */}
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-40 h-6 bg-black rounded-b-3xl z-10" />
-          
-          {/* Screen */}
-          <div className="w-full h-full bg-white rounded-[2.5rem] overflow-hidden shadow-inner">
-            <div className="h-full flex flex-col bg-gradient-to-b from-gray-50 to-white">
-              {/* Status Bar with Real Time */}
-              <div className="flex justify-between items-center px-6 pt-8 pb-4 bg-white">
-                <span className="text-xs font-semibold text-text-primary">{currentTime}</span>
-                <div className="flex gap-1 items-center">
-                  <div className="flex gap-0.5">
-                    <div className="w-1 h-2 bg-text-primary rounded-full"></div>
-                    <div className="w-1 h-3 bg-text-primary rounded-full"></div>
-                    <div className="w-1 h-3.5 bg-text-primary rounded-full"></div>
-                    <div className="w-1 h-4 bg-text-primary rounded-full"></div>
-                  </div>
-                  <svg className="w-5 h-5 text-text-primary" fill="currentColor" viewBox="0 0 20 20">
-                    <path d="M6 2a2 2 0 00-2 2v12a2 2 0 002 2h8a2 2 0 002-2V4a2 2 0 00-2-2H6zm4 14a1 1 0 100-2 1 1 0 000 2z" />
-                  </svg>
+  const doctors = [
+    {
+      id: 1,
+      name: 'Dr. Sarah Johnson',
+      specialty: 'Cardiologist',
+      rating: 4.9,
+      experience: '15 years',
+      image: 'SJ',
+      fee: 1500,
+    },
+    {
+      id: 2,
+      name: 'Dr. Michael Chen',
+      specialty: 'Neurologist',
+      rating: 4.8,
+      experience: '12 years',
+      image: 'MC',
+      fee: 1800,
+    },
+    {
+      id: 3,
+      name: 'Dr. Priya Sharma',
+      specialty: 'Pediatrician',
+      rating: 4.9,
+      experience: '10 years',
+      image: 'PS',
+      fee: 1200,
+    },
+  ];
+
+  const timeSlots = [
+    '9:00 AM', '10:00 AM', '11:30 AM', 
+    '2:00 PM', '3:30 PM', '4:30 PM'
+  ];
+
+  // Render different screens
+  const renderScreen = () => {
+    switch (currentScreen) {
+      case 'home':
+        return (
+          <div className="h-full flex flex-col">
+            {/* App Header */}
+            <div className="px-4 pb-4">
+              <div className="flex items-center justify-between mb-6">
+                <div>
+                  <h1 className="text-2xl font-bold text-text-primary">MediFlow</h1>
+                  <p className="text-xs text-text-secondary">Find & Book Appointments</p>
+                </div>
+                <div className="w-10 h-10 rounded-full bg-primary-teal text-white flex items-center justify-center text-sm font-semibold">
+                  AM
                 </div>
               </div>
 
-              {/* Content */}
-              <div className="flex-1 px-4 pb-6">
-                <motion.div
-                  key={currentStep}
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -20 }}
-                  transition={{ duration: 0.3 }}
-                  className="h-full"
-                >
-                  <div className="mb-4">
-                    <div className="flex items-center justify-between mb-2">
-                      <h3 className="text-lg font-bold text-text-primary">
-                        {steps[currentStep].title}
-                      </h3>
-                      <span className="text-xs text-text-secondary">{currentDate}</span>
+              {/* Search Bar */}
+              <div className="relative">
+                <input
+                  type="text"
+                  placeholder="Search doctors, specialties..."
+                  className="w-full px-4 py-3 pl-10 bg-white border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-teal/20"
+                  readOnly
+                />
+                <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-secondary" />
+              </div>
+            </div>
+
+            {/* Quick Actions */}
+            <div className="px-4 pb-4">
+              <div className="grid grid-cols-4 gap-3">
+                {[
+                  { icon: <Calendar className="w-5 h-5" />, label: 'Book' },
+                  { icon: <Clock className="w-5 h-5" />, label: 'Schedule' },
+                  { icon: <Users className="w-5 h-5" />, label: 'Doctors' },
+                  { icon: <Activity className="w-5 h-5" />, label: 'Records' },
+                ].map((action, idx) => (
+                  <div key={idx} className="flex flex-col items-center gap-2">
+                    <div className="w-14 h-14 bg-primary-teal/10 rounded-2xl flex items-center justify-center text-primary-teal">
+                      {action.icon}
                     </div>
-                    <div className="flex gap-1">
-                      {steps.map((_, idx) => (
-                        <div
-                          key={idx}
-                          className={`h-1 rounded-full flex-1 transition-all ${
-                            idx === currentStep ? 'bg-primary-teal' : 'bg-border'
-                          }`}
-                        />
-                      ))}
+                    <span className="text-xs text-text-secondary">{action.label}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Upcoming Appointments */}
+            <div className="flex-1 px-4 overflow-auto scrollbar-hide">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-sm font-semibold text-text-primary">Upcoming</h3>
+                <span className="text-xs text-primary-teal">View All</span>
+              </div>
+              
+              <div className="space-y-3">
+                <div className="p-4 bg-white border border-border rounded-xl shadow-sm">
+                  <div className="flex gap-3">
+                    <div className="w-12 h-12 rounded-full bg-primary-green/10 text-primary-green flex items-center justify-center font-semibold text-sm">
+                      SJ
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-sm font-semibold text-text-primary">Dr. Sarah Johnson</p>
+                      <p className="text-xs text-text-secondary">Cardiologist</p>
+                      <div className="flex items-center gap-3 mt-2 text-xs text-text-secondary">
+                        <span className="flex items-center gap-1">
+                          <Calendar className="w-3 h-3" />
+                          {currentDate}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Clock className="w-3 h-3" />
+                          11:30 AM
+                        </span>
+                      </div>
                     </div>
                   </div>
-                  {steps[currentStep].content}
-                </motion.div>
+                </div>
+              </div>
+            </div>
+
+            {/* Bottom Navigation */}
+            <div className="px-4 py-3 border-t border-border bg-white">
+              <div className="flex justify-around items-center">
+                {[
+                  { icon: <Activity className="w-5 h-5" />, active: true },
+                  { icon: <Calendar className="w-5 h-5" />, active: false },
+                  { icon: <Users className="w-5 h-5" />, active: false },
+                  { icon: <Award className="w-5 h-5" />, active: false },
+                ].map((item, idx) => (
+                  <div
+                    key={idx}
+                    className={`p-2 rounded-xl ${item.active ? 'text-primary-teal bg-primary-teal/10' : 'text-text-secondary'}`}
+                  >
+                    {item.icon}
+                  </div>
+                ))}
               </div>
             </div>
           </div>
-          
-          {/* Home Indicator */}
-          <div className="absolute bottom-2 left-1/2 -translate-x-1/2 w-32 h-1 bg-white/30 rounded-full" />
+        );
+
+      case 'doctors':
+        return (
+          <div className="h-full flex flex-col">
+            {/* Header */}
+            <div className="px-4 pb-4">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center">
+                  <ArrowRight className="w-4 h-4 rotate-180 text-text-primary" />
+                </div>
+                <h2 className="text-lg font-bold text-text-primary">Find Doctors</h2>
+              </div>
+
+              {/* Filters */}
+              <div className="flex gap-2 overflow-x-auto pb-2">
+                {['All', 'Cardiology', 'Neurology', 'Pediatrics'].map((filter, idx) => (
+                  <div
+                    key={idx}
+                    className={`px-4 py-2 rounded-full text-xs font-medium whitespace-nowrap ${
+                      idx === 0
+                        ? 'bg-primary-teal text-white'
+                        : 'bg-gray-100 text-text-secondary'
+                    }`}
+                  >
+                    {filter}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Doctors List */}
+            <div className="flex-1 px-4 overflow-auto space-y-3 scrollbar-hide">
+              {doctors.map((doctor) => (
+                <div
+                  key={doctor.id}
+                  className="p-4 bg-white border border-border rounded-xl hover:shadow-lg transition-shadow cursor-pointer"
+                  onClick={() => {
+                    setSelectedDoctor(doctor);
+                    setCurrentScreen('booking');
+                  }}
+                >
+                  <div className="flex gap-3">
+                    <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary-teal to-primary-green text-white flex items-center justify-center font-bold text-lg shadow-lg">
+                      {doctor.image}
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-start justify-between mb-1">
+                        <div>
+                          <p className="text-sm font-bold text-text-primary">{doctor.name}</p>
+                          <p className="text-xs text-text-secondary">{doctor.specialty}</p>
+                        </div>
+                        <div className="flex items-center gap-1 px-2 py-1 bg-warning/10 rounded-lg">
+                          <Star className="w-3 h-3 fill-warning text-warning" />
+                          <span className="text-xs font-semibold text-warning">{doctor.rating}</span>
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between mt-2">
+                        <span className="text-xs text-text-secondary">{doctor.experience} exp</span>
+                        <span className="text-sm font-bold text-primary-teal">₹{doctor.fee}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Bottom Navigation */}
+            <div className="px-4 py-3 border-t border-border bg-white">
+              <div className="flex justify-around items-center">
+                {[
+                  { icon: <Activity className="w-5 h-5" />, active: false },
+                  { icon: <Calendar className="w-5 h-5" />, active: false },
+                  { icon: <Users className="w-5 h-5" />, active: true },
+                  { icon: <Award className="w-5 h-5" />, active: false },
+                ].map((item, idx) => (
+                  <div
+                    key={idx}
+                    className={`p-2 rounded-xl ${item.active ? 'text-primary-teal bg-primary-teal/10' : 'text-text-secondary'}`}
+                  >
+                    {item.icon}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        );
+
+      case 'booking':
+        const doctor = selectedDoctor || doctors[0];
+        return (
+          <div className="h-full flex flex-col">
+            {/* Header */}
+            <div className="px-4 pb-4">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center">
+                  <ArrowRight className="w-4 h-4 rotate-180 text-text-primary" />
+                </div>
+                <h2 className="text-lg font-bold text-text-primary">Book Appointment</h2>
+              </div>
+
+              {/* Doctor Info */}
+              <div className="p-4 bg-gradient-to-br from-primary-teal to-primary-green rounded-2xl text-white shadow-lg">
+                <div className="flex gap-3 items-center">
+                  <div className="w-16 h-16 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center font-bold text-lg">
+                    {doctor.image}
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-bold text-base">{doctor.name}</p>
+                    <p className="text-sm text-white/90">{doctor.specialty}</p>
+                    <div className="flex items-center gap-2 mt-1">
+                      <div className="flex items-center gap-1">
+                        <Star className="w-3 h-3 fill-white text-white" />
+                        <span className="text-xs font-medium">{doctor.rating}</span>
+                      </div>
+                      <span className="text-xs text-white/80">•</span>
+                      <span className="text-xs text-white/90">{doctor.experience}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Time Slots */}
+            <div className="flex-1 px-4 overflow-auto scrollbar-hide">
+              <div className="mb-3">
+                <h3 className="text-sm font-semibold text-text-primary mb-1">Select Date</h3>
+                <div className="flex gap-2 overflow-x-auto pb-2">
+                  {[0, 1, 2, 3, 4].map((offset) => {
+                    const date = new Date();
+                    date.setDate(date.getDate() + offset);
+                    const day = date.getDate();
+                    const weekday = date.toLocaleDateString('en-US', { weekday: 'short' });
+                    return (
+                      <div
+                        key={offset}
+                        className={`flex flex-col items-center px-4 py-3 rounded-xl min-w-[60px] ${
+                          offset === 0
+                            ? 'bg-primary-teal text-white shadow-md'
+                            : 'bg-gray-50 text-text-secondary'
+                        }`}
+                      >
+                        <span className="text-xs font-medium">{weekday}</span>
+                        <span className="text-lg font-bold mt-1">{day}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="mb-4">
+                <h3 className="text-sm font-semibold text-text-primary mb-3">Available Slots</h3>
+                <div className="grid grid-cols-3 gap-2">
+                  {timeSlots.map((slot, idx) => (
+                    <div
+                      key={idx}
+                      className={`p-3 text-center rounded-xl border-2 cursor-pointer transition-all ${
+                        idx === 2 || selectedSlot === slot
+                          ? 'bg-primary-teal text-white border-primary-teal shadow-md'
+                          : 'bg-white border-border hover:border-primary-teal/30'
+                      }`}
+                      onClick={() => setSelectedSlot(slot)}
+                    >
+                      <p className="text-xs font-semibold">{slot}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Booking Summary */}
+              <div className="p-4 bg-gray-50 rounded-xl mb-4">
+                <h3 className="text-xs font-semibold text-text-secondary mb-2">Booking Summary</h3>
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-text-secondary">Consultation Fee</span>
+                    <span className="font-semibold text-text-primary">₹{doctor.fee}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-text-secondary">Service Charge</span>
+                    <span className="font-semibold text-text-primary">₹50</span>
+                  </div>
+                  <div className="border-t border-border pt-2 flex justify-between">
+                    <span className="text-sm font-semibold text-text-primary">Total</span>
+                    <span className="text-lg font-bold text-primary-teal">₹{doctor.fee + 50}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Book Button */}
+            <div className="px-4 pb-4">
+              <button
+                onClick={() => setCurrentScreen('success')}
+                className="w-full py-4 bg-primary-teal text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-2"
+              >
+                <CheckCircle className="w-5 h-5" />
+                Confirm Booking
+              </button>
+            </div>
+          </div>
+        );
+
+      case 'success':
+        return (
+          <div className="h-full flex flex-col items-center justify-center px-4">
+            {/* Success Animation */}
+            <motion.div
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              transition={{ type: 'spring', duration: 0.6 }}
+              className="w-24 h-24 rounded-full bg-primary-green/10 flex items-center justify-center mb-6"
+            >
+              <div className="w-20 h-20 rounded-full bg-primary-green/20 flex items-center justify-center">
+                <CheckCircle className="w-12 h-12 text-primary-green" />
+              </div>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
+              className="text-center mb-8"
+            >
+              <h2 className="text-2xl font-bold text-text-primary mb-2">Booking Confirmed!</h2>
+              <p className="text-sm text-text-secondary">
+                Your appointment has been successfully booked
+              </p>
+            </motion.div>
+
+            {/* Appointment Details */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.5 }}
+              className="w-full p-5 bg-white border border-border rounded-2xl shadow-lg mb-6"
+            >
+              <div className="flex items-center gap-3 pb-4 border-b border-border">
+                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-primary-teal to-primary-green text-white flex items-center justify-center font-bold text-lg">
+                  SJ
+                </div>
+                <div>
+                  <p className="font-bold text-text-primary">Dr. Sarah Johnson</p>
+                  <p className="text-xs text-text-secondary">Cardiologist</p>
+                </div>
+              </div>
+              
+              <div className="space-y-3 pt-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-primary-teal/10 flex items-center justify-center">
+                    <Calendar className="w-5 h-5 text-primary-teal" />
+                  </div>
+                  <div>
+                    <p className="text-xs text-text-secondary">Date</p>
+                    <p className="text-sm font-semibold text-text-primary">{currentDate}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-primary-teal/10 flex items-center justify-center">
+                    <Clock className="w-5 h-5 text-primary-teal" />
+                  </div>
+                  <div>
+                    <p className="text-xs text-text-secondary">Time</p>
+                    <p className="text-sm font-semibold text-text-primary">11:30 AM</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-primary-teal/10 flex items-center justify-center">
+                    <MapPin className="w-5 h-5 text-primary-teal" />
+                  </div>
+                  <div>
+                    <p className="text-xs text-text-secondary">Location</p>
+                    <p className="text-sm font-semibold text-text-primary">Ruby Hall Clinic, Pune</p>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+
+            {/* Action Buttons */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.7 }}
+              className="w-full space-y-3"
+            >
+              <button className="w-full py-3 bg-primary-teal text-white font-semibold rounded-xl shadow-lg">
+                Add to Calendar
+              </button>
+              <button className="w-full py-3 bg-white border-2 border-border text-text-primary font-semibold rounded-xl">
+                View Details
+              </button>
+            </motion.div>
+          </div>
+        );
+
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <div className="relative hover:scale-[1.02] transition-transform duration-500">
+      {/* iPhone 14 Pro Frame - Compact & Realistic */}
+      <div className="relative w-[280px] h-[600px]">
+          {/* Metal Frame with realistic bezels */}
+          <div className="absolute inset-0 bg-gradient-to-b from-[#3a3a3a] via-[#1f1f1f] to-[#3a3a3a] rounded-[3rem] shadow-[0_25px_70px_rgba(0,0,0,0.9),0_12px_35px_rgba(0,0,0,0.75),inset_0_1px_2px_rgba(255,255,255,0.12),inset_0_-1px_2px_rgba(0,0,0,0.5)]">
+            {/* Side buttons - Left side */}
+            <div className="absolute -left-[2px] top-[110px] w-[2.5px] h-[45px] bg-gradient-to-b from-[#4a4a4a] via-[#2a2a2a] to-[#1f1f1f] rounded-l-md shadow-inner"></div>
+            <div className="absolute -left-[2px] top-[170px] w-[2.5px] h-[60px] bg-gradient-to-b from-[#4a4a4a] via-[#2a2a2a] to-[#1f1f1f] rounded-l-md shadow-inner"></div>
+            <div className="absolute -left-[2px] top-[245px] w-[2.5px] h-[60px] bg-gradient-to-b from-[#4a4a4a] via-[#2a2a2a] to-[#1f1f1f] rounded-l-md shadow-inner"></div>
+            
+            {/* Power button - Right side */}
+            <div className="absolute -right-[2px] top-[185px] w-[2.5px] h-[75px] bg-gradient-to-b from-[#4a4a4a] via-[#2a2a2a] to-[#1f1f1f] rounded-r-md shadow-inner"></div>
+            
+            {/* Inner bezel */}
+            <div className="absolute inset-[3px] bg-black rounded-[2.8rem] shadow-[inset_0_3px_12px_rgba(0,0,0,0.95)]">
+              {/* Dynamic Island */}
+              <div className="absolute top-[11px] left-1/2 -translate-x-1/2 w-[95px] h-[28px] bg-black rounded-[1.8rem] z-20 shadow-[0_3px_10px_rgba(0,0,0,0.8)] flex items-center justify-center gap-3">
+                {/* Front Camera */}
+                <div className="w-[8px] h-[8px] bg-gradient-radial from-[#1a1a3e] to-[#0a0a1e] rounded-full ring-[1px] ring-white/15 shadow-inner"></div>
+                {/* Face ID Sensors */}
+                <div className="flex gap-1">
+                  <div className="w-[2px] h-[2px] bg-[#5a5a7a] rounded-full shadow-sm"></div>
+                  <div className="w-[2px] h-[2px] bg-[#5a5a7a] rounded-full shadow-sm"></div>
+                </div>
+              </div>
+              
+              {/* Screen Content */}
+              <div className="absolute inset-[7px] bg-white rounded-[2.5rem] overflow-hidden shadow-[inset_0_0_15px_rgba(0,0,0,0.1)]">
+                {/* Status Bar */}
+                <div className="absolute top-0 left-0 right-0 h-[44px] bg-white z-30 px-7 pt-[12px] flex items-start justify-between">
+                  <span className="text-[13px] font-semibold text-text-primary tracking-tight leading-none">{currentTime}</span>
+                  <div className="flex items-center gap-[5px]">
+                    {/* Cellular Signal */}
+                    <div className="flex gap-[2px] items-end">
+                      <div className="w-[2.5px] h-[4px] bg-text-primary rounded-full"></div>
+                      <div className="w-[2.5px] h-[5px] bg-text-primary rounded-full"></div>
+                      <div className="w-[2.5px] h-[7px] bg-text-primary rounded-full"></div>
+                      <div className="w-[2.5px] h-[8px] bg-text-primary rounded-full"></div>
+                    </div>
+                    {/* WiFi */}
+                    <svg className="w-[14px] h-[14px] text-text-primary" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M1 9l2 2c4.97-4.97 13.03-4.97 18 0l2-2C16.93 2.93 7.08 2.93 1 9zm8 8l3 3 3-3c-1.65-1.66-4.34-1.66-6 0zm-4-4l2 2c2.76-2.76 7.24-2.76 10 0l2-2C15.14 9.14 8.87 9.14 5 13z"/>
+                    </svg>
+                    {/* Battery */}
+                    <div className="flex items-center gap-[2px]">
+                      <div className="w-[20px] h-[10px] border-[1.5px] border-text-primary rounded-[2.5px] relative flex items-center">
+                        <div className="absolute inset-[1.5px] bg-text-primary rounded-[1.5px]"></div>
+                      </div>
+                      <div className="w-[2px] h-[4px] bg-text-primary rounded-r-[1px]"></div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* App Content with smooth transitions */}
+                <div className="absolute top-[44px] left-0 right-0 bottom-[10px] bg-gradient-to-b from-white to-gray-50/50 overflow-hidden">
+                  <motion.div
+                    key={currentScreen}
+                    initial={{ opacity: 0, x: 50 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -50 }}
+                    transition={{ duration: 0.4, ease: 'easeInOut' }}
+                    className="h-full"
+                  >
+                    {renderScreen()}
+                  </motion.div>
+                </div>
+
+                {/* Home Indicator */}
+                <div className="absolute bottom-[8px] left-1/2 -translate-x-1/2 w-[110px] h-[4px] bg-text-primary/25 rounded-full shadow-sm"></div>
+              </div>
+            </div>
+          </div>
+
+          {/* Screen reflection effect - Glass-like */}
+          <div className="absolute inset-[3px] rounded-[2.8rem] overflow-hidden pointer-events-none">
+            <div className="absolute inset-0 bg-gradient-to-br from-white/8 via-transparent to-transparent opacity-50"></div>
+          </div>
         </div>
 
-        {/* Glow effect */}
-        <div className="absolute inset-0 bg-primary-teal/20 blur-3xl rounded-full -z-10 animate-pulse" />
+        {/* Realistic shadow beneath device */}
+        <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 w-[60%] h-4 bg-black/20 blur-xl rounded-full -z-20"></div>
       </div>
-    </BorderGlow>
   );
 };
 
@@ -545,8 +973,8 @@ export const Landing: React.FC = () => {
           <GoogleMapComponent />
         </div>
 
-        {/* Dark Overlay for better text readability */}
-        <div className="absolute inset-0 bg-black/40 z-10" />
+        {/* Lighter Dark Overlay for better map visibility */}
+        <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-black/30 z-10" />
 
         {/* Content */}
         <div className="relative z-20 h-full flex items-center">
