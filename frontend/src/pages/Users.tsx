@@ -26,7 +26,16 @@ const userSchema = z.object({
 
 type UserFormData = z.infer<typeof userSchema>;
 
-const mockUsers = [
+type User = {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  role: 'admin' | 'doctor' | 'receptionist' | 'patient';
+  createdAt: string;
+};
+
+const mockUsers: User[] = [
   {
     id: '1',
     name: 'Dr. Sarah Johnson',

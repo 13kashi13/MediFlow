@@ -34,7 +34,29 @@ const prescriptionSchema = z.object({
 
 type PrescriptionFormData = z.infer<typeof prescriptionSchema>;
 
-const mockPrescriptions = [
+type Medication = {
+  name: string;
+  dosage: string;
+  frequency: string;
+  duration: string;
+  instructions?: string;
+};
+
+type Prescription = {
+  id: string;
+  patientId: string;
+  patientName: string;
+  doctorId: string;
+  doctorName: string;
+  diagnosis: string;
+  medications: Medication[];
+  notes?: string;
+  date: string;
+  createdAt: string;
+  updatedAt?: string;
+};
+
+const mockPrescriptions: Prescription[] = [
   {
     id: '1',
     patientId: '1',

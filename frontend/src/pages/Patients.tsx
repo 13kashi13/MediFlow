@@ -31,7 +31,21 @@ const patientSchema = z.object({
 
 type PatientFormData = z.infer<typeof patientSchema>;
 
-const mockPatients = [
+type Patient = {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  dateOfBirth: string;
+  gender: 'male' | 'female' | 'other';
+  address: string;
+  bloodGroup?: string;
+  emergencyContact?: string;
+  createdAt: string;
+  updatedAt?: string;
+};
+
+const mockPatients: Patient[] = [
   {
     id: '1',
     name: 'John Smith',

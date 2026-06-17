@@ -25,7 +25,23 @@ const appointmentSchema = z.object({
 
 type AppointmentFormData = z.infer<typeof appointmentSchema>;
 
-const mockAppointments = [
+type Appointment = {
+  id: string;
+  patientId: string;
+  patientName: string;
+  doctorId: string;
+  doctorName: string;
+  date: string;
+  time: string;
+  duration: number;
+  status: 'scheduled' | 'confirmed' | 'completed' | 'cancelled' | 'no-show';
+  type: 'consultation' | 'follow-up' | 'emergency';
+  reason?: string;
+  createdAt: string;
+  updatedAt?: string;
+};
+
+const mockAppointments: Appointment[] = [
   {
     id: '1',
     patientId: '1',

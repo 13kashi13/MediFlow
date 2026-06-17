@@ -29,7 +29,20 @@ const doctorSchema = z.object({
 
 type DoctorFormData = z.infer<typeof doctorSchema>;
 
-const mockDoctors = [
+type Doctor = {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  specialization: string;
+  qualification: string;
+  experience: number;
+  consultationFee?: number;
+  rating: number;
+  createdAt: string;
+};
+
+const mockDoctors: Doctor[] = [
   {
     id: '1',
     name: 'Dr. Sarah Johnson',
