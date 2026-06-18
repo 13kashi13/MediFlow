@@ -14,8 +14,8 @@ import { Stethoscope } from 'lucide-react';
 const doctorProfileSchema = z.object({
   specialization: z.string().min(2, 'Specialization is required'),
   qualification: z.string().min(2, 'Qualification is required'),
-  experience: z.coerce.number().min(0, 'Experience must be 0 or more').max(70, 'Invalid experience'),
-  consultation_fee: z.coerce.number().min(0, 'Fee must be 0 or more'),
+  experience: z.coerce.number().min(0).max(70),
+  consultation_fee: z.coerce.number().min(0),
 });
 
 type DoctorProfileFormData = z.infer<typeof doctorProfileSchema>;
@@ -31,8 +31,10 @@ export const CompleteDoctorProfile: React.FC = () => {
     handleSubmit,
     formState: { errors },
   } = useForm<DoctorProfileFormData>({
-    resolver: zodResolver(doctorProfileSchema),
+    resolver: zodResolver(doctorProfileSchema) as any,
     defaultValues: {
+      specialization: '',
+      qualification: '',
       experience: 0,
       consultation_fee: 0,
     },
