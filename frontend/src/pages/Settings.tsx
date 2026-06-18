@@ -8,6 +8,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useToast } from '../contexts/ToastContext';
 import { useAuth } from '../contexts/AuthContext';
+import { axiosInstance } from '../lib/axios';
 
 const profileSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
@@ -38,7 +39,7 @@ type PasswordFormData = z.infer<typeof passwordSchema>;
 type ClinicFormData = z.infer<typeof clinicSchema>;
 
 export const Settings: React.FC = () => {
-  const { user } = useAuth();
+  const { user, login } = useAuth();
   const { showToast } = useToast();
   const [activeTab, setActiveTab] = useState('profile');
 
@@ -78,13 +79,34 @@ export const Settings: React.FC = () => {
     },
   });
 
-  const handleProfileUpdate = (data: ProfileFormData) => {
-    showToast('success', 'Profile updated successfully');
+  const handleProfileUpdate = async (data: ProfileFormData) => {
+    if (user) {
+      try {
+        // Only send fields that exist in the users table — no qualification column
+        await axiosInstance.patch('/auth/profile', {
+          full_name: data.name,
+          phone: data.phone,
+        });
+        const updatedUser = { ...user, name: data.name, phone: data.phone };
+        login(updatedUser, localStorage.getItem('token') || '');
+        showToast('success', 'Profile updated successfully');
+      } catch (err: any) {
+        showToast('error', err?.response?.data?.detail || 'Failed to update profile');
+      }
+    }
   };
 
-  const handlePasswordChange = (data: PasswordFormData) => {
-    showToast('success', 'Password changed successfully');
-    resetPassword();
+  const handlePasswordChange = async (data: PasswordFormData) => {
+    try {
+      await axiosInstance.post('/auth/change-password', {
+        current_password: data.currentPassword,
+        new_password: data.newPassword,
+      });
+      showToast('success', 'Password changed successfully');
+      resetPassword();
+    } catch (err: any) {
+      showToast('error', err?.response?.data?.detail || 'Failed to change password');
+    }
   };
 
   const handleClinicUpdate = (data: ClinicFormData) => {
@@ -147,6 +169,15 @@ export const Settings: React.FC = () => {
               error={profileErrors.phone?.message}
               {...registerProfile('phone')}
             />
+            {user?.role === 'doctor' && (
+              <Input
+                label="Qualification (displayed on profile)"
+                placeholder="e.g. MBBS, MD"
+                error={profileErrors.name?.message}
+                defaultValue={user?.qualification || ''}
+                disabled
+              />
+            )}
             <div className="flex justify-end pt-4">
               <Button type="submit">Save Changes</Button>
             </div>

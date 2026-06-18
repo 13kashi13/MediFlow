@@ -1,6 +1,6 @@
 import React from 'react';
 import { Card } from '../components/ui/Card';
-import { TrendingUp, TrendingDown, Users, UserCog, Calendar, DollarSign } from 'lucide-react';
+import { TrendingUp, TrendingDown, Users, UserCog, Calendar, Star } from 'lucide-react';
 import {
   LineChart,
   Line,
@@ -40,13 +40,13 @@ const doctorWorkloadData = [
   { doctor: 'Dr. Brown', appointments: 25 },
 ];
 
-const revenueData = [
-  { month: 'Jan', revenue: 12500 },
-  { month: 'Feb', revenue: 14200 },
-  { month: 'Mar', revenue: 15800 },
-  { month: 'Apr', revenue: 16500 },
-  { month: 'May', revenue: 18900 },
-  { month: 'Jun', revenue: 21300 },
+const satisfactionData = [
+  { month: 'Jan', score: 4.5 },
+  { month: 'Feb', score: 4.6 },
+  { month: 'Mar', score: 4.7 },
+  { month: 'Apr', score: 4.7 },
+  { month: 'May', score: 4.8 },
+  { month: 'Jun', score: 4.8 },
 ];
 
 const COLORS = ['#2FA084', '#6FCF97', '#F59E0B'];
@@ -57,28 +57,32 @@ const StatCard: React.FC<{
   value: string;
   trend: number;
   trendLabel: string;
-}> = ({ icon, title, value, trend, trendLabel }) => (
-  <Card>
-    <div className="flex items-start justify-between">
-      <div>
-        <p className="text-sm text-text-secondary mb-1">{title}</p>
-        <h3 className="text-2xl font-bold text-text-primary mb-2">{value}</h3>
-        <div className="flex items-center gap-1">
-          {trend >= 0 ? (
-            <TrendingUp className="w-4 h-4 text-success" />
-          ) : (
-            <TrendingDown className="w-4 h-4 text-danger" />
-          )}
-          <span className={`text-sm font-medium ${trend >= 0 ? 'text-success' : 'text-danger'}`}>
-            {Math.abs(trend)}%
-          </span>
-          <span className="text-sm text-text-secondary">{trendLabel}</span>
+  invertColor?: boolean;
+}> = ({ icon, title, value, trend, trendLabel, invertColor = false }) => {
+  const isSuccess = invertColor ? trend <= 0 : trend >= 0;
+  return (
+    <Card>
+      <div className="flex items-start justify-between">
+        <div>
+          <p className="text-sm text-text-secondary mb-1">{title}</p>
+          <h3 className="text-2xl font-bold text-text-primary mb-2">{value}</h3>
+          <div className="flex items-center gap-1">
+            {trend >= 0 ? (
+              <TrendingUp className="w-4 h-4 text-success" />
+            ) : (
+              <TrendingDown className="w-4 h-4 text-danger" />
+            )}
+            <span className={`text-sm font-medium ${isSuccess ? 'text-success' : 'text-danger'}`}>
+              {Math.abs(trend)}%
+            </span>
+            <span className="text-sm text-text-secondary">{trendLabel}</span>
+          </div>
         </div>
+        <div className="p-3 bg-primary-teal/10 rounded-lg">{icon}</div>
       </div>
-      <div className="p-3 bg-primary-teal/10 rounded-lg">{icon}</div>
-    </div>
-  </Card>
-);
+    </Card>
+  );
+};
 
 export const Analytics: React.FC = () => {
   return (
@@ -114,10 +118,10 @@ export const Analytics: React.FC = () => {
           trendLabel="this month"
         />
         <StatCard
-          icon={<DollarSign className="w-6 h-6 text-primary-teal" />}
-          title="Revenue"
-          value="$21,300"
-          trend={12}
+          icon={<Star className="w-6 h-6 text-primary-teal" />}
+          title="Satisfaction Rate"
+          value="4.8/5.0"
+          trend={4}
           trendLabel="vs last month"
         />
       </div>
@@ -206,11 +210,11 @@ export const Analytics: React.FC = () => {
           </ResponsiveContainer>
         </Card>
 
-        {/* Revenue Trend */}
+        {/* Satisfaction Trend */}
         <Card>
-          <h3 className="text-lg font-semibold text-text-primary mb-4">Revenue Trend</h3>
+          <h3 className="text-lg font-semibold text-text-primary mb-4">Patient Satisfaction Trend</h3>
           <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={revenueData}>
+            <BarChart data={satisfactionData}>
               <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
               <XAxis dataKey="month" tick={{ fontSize: 12 }} stroke="#64748B" />
               <YAxis tick={{ fontSize: 12 }} stroke="#64748B" />
@@ -220,9 +224,9 @@ export const Analytics: React.FC = () => {
                   border: '1px solid #E5E7EB',
                   borderRadius: '8px',
                 }}
-                formatter={(value: any) => `$${value.toLocaleString()}`}
+                formatter={(value: any) => [`${value} / 5.0`, 'Satisfaction']}
               />
-              <Bar dataKey="revenue" fill="#2FA084" radius={[8, 8, 0, 0]} />
+              <Bar dataKey="score" fill="#2FA084" radius={[8, 8, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </Card>
@@ -231,9 +235,9 @@ export const Analytics: React.FC = () => {
       {/* Additional Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Card>
-          <h4 className="text-sm font-semibold text-text-primary mb-3">Average Wait Time</h4>
-          <p className="text-3xl font-bold text-text-primary">18 min</p>
-          <p className="text-sm text-success mt-2">-5 min from last month</p>
+          <h4 className="text-sm font-semibold text-text-primary mb-3">Prescriptions Filled</h4>
+          <p className="text-3xl font-bold text-text-primary">184</p>
+          <p className="text-sm text-success mt-2">+8% from last month</p>
         </Card>
         <Card>
           <h4 className="text-sm font-semibold text-text-primary mb-3">Patient Satisfaction</h4>

@@ -27,7 +27,10 @@ export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
           )}
           {...props}
         >
-          <option value="">Select...</option>
+          {/* Only show placeholder if no defaultValue/value is pre-set */}
+          {!props.value && !props.defaultValue && (
+            <option value="">Select...</option>
+          )}
           {options.map((option) => (
             <option key={option.value} value={option.value}>
               {option.label}

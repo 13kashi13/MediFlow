@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Plus, Edit, Trash2, Users as UsersIcon } from 'lucide-react';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
@@ -15,101 +15,105 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useToast } from '../contexts/ToastContext';
+import { useAuth } from '../contexts/AuthContext';
 import { formatDate, formatPhone } from '../utils/format';
 import { motion } from 'framer-motion';
+import { axiosInstance } from '../lib/axios';
 
-const patientSchema = z.object({
-  name: z.string().min(2, 'Name must be at least 2 characters'),
+// Schema for creating a NEW patient (requires account details)
+const addPatientSchema = z.object({
+  full_name: z.string().min(2, 'Full name is required'),
   email: z.string().email('Invalid email address'),
-  phone: z.string().min(10, 'Invalid phone number'),
-  dateOfBirth: z.string().min(1, 'Date of birth is required'),
-  gender: z.enum(['male', 'female', 'other']),
-  address: z.string().min(5, 'Address is required'),
-  bloodGroup: z.string().optional(),
-  emergencyContact: z.string().optional(),
+  password: z.string().min(6, 'Password must be at least 6 characters'),
+  date_of_birth: z.string().optional(),
+  gender: z.enum(['male', 'female', 'other']).optional(),
+  address: z.string().optional(),
+  blood_group: z.string().optional(),
+  emergency_contact: z.string().optional(),
 });
 
-type PatientFormData = z.infer<typeof patientSchema>;
+// Schema for editing existing patient profile fields only
+const editPatientSchema = z.object({
+  date_of_birth: z.string().min(1, 'Date of birth is required'),
+  gender: z.enum(['male', 'female', 'other']),
+  address: z.string().min(2, 'Address is required'),
+  blood_group: z.string().optional(),
+  emergency_contact: z.string().optional(),
+});
+
+type AddPatientFormData = z.infer<typeof addPatientSchema>;
+type EditPatientFormData = z.infer<typeof editPatientSchema>;
 
 type Patient = {
   id: string;
-  name: string;
-  email: string;
-  phone: string;
-  dateOfBirth: string;
-  gender: 'male' | 'female' | 'other';
-  address: string;
-  bloodGroup?: string;
-  emergencyContact?: string;
-  createdAt: string;
-  updatedAt?: string;
+  user_id: string;
+  date_of_birth?: string;
+  gender?: string;
+  address?: string;
+  blood_group?: string;
+  emergency_contact?: string;
+  created_at?: string;
+  users?: {
+    id: string;
+    full_name: string;
+    email: string;
+    role: string;
+  };
 };
 
-const mockPatients: Patient[] = [
-  {
-    id: '1',
-    name: 'John Smith',
-    email: 'john.smith@email.com',
-    phone: '1234567890',
-    dateOfBirth: '1985-03-15',
-    gender: 'male' as const,
-    address: '123 Main St, New York, NY 10001',
-    bloodGroup: 'O+',
-    emergencyContact: '0987654321',
-    createdAt: '2024-01-15',
-  },
-  {
-    id: '2',
-    name: 'Emma Wilson',
-    email: 'emma.wilson@email.com',
-    phone: '2345678901',
-    dateOfBirth: '1990-07-22',
-    gender: 'female' as const,
-    address: '456 Oak Ave, Los Angeles, CA 90001',
-    bloodGroup: 'A+',
-    emergencyContact: '1098765432',
-    createdAt: '2024-02-10',
-  },
-  {
-    id: '3',
-    name: 'Michael Brown',
-    email: 'michael.brown@email.com',
-    phone: '3456789012',
-    dateOfBirth: '1978-11-30',
-    gender: 'male' as const,
-    address: '789 Pine Rd, Chicago, IL 60601',
-    bloodGroup: 'B+',
-    emergencyContact: '2109876543',
-    createdAt: '2024-03-05',
-  },
-];
-
 export const Patients: React.FC = () => {
+  const { user } = useAuth();
   const { showToast } = useToast();
-  const [patients, setPatients] = useState(mockPatients);
+  const [patients, setPatients] = useState<Patient[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [selectedPatient, setSelectedPatient] = useState<typeof mockPatients[0] | null>(null);
+  const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 10;
 
   const {
-    register,
-    handleSubmit,
-    reset,
-    formState: { errors },
-  } = useForm<PatientFormData>({
-    resolver: zodResolver(patientSchema),
+    register: registerAdd,
+    handleSubmit: handleSubmitAdd,
+    reset: resetAdd,
+    formState: { errors: addErrors },
+  } = useForm<AddPatientFormData>({
+    resolver: zodResolver(addPatientSchema),
   });
 
-  const filteredPatients = patients.filter(
-    (patient) =>
-      patient.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      patient.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      patient.phone.includes(searchQuery)
-  );
+  const {
+    register: registerEdit,
+    handleSubmit: handleSubmitEdit,
+    reset: resetEdit,
+    formState: { errors: editErrors },
+  } = useForm<EditPatientFormData>({
+    resolver: zodResolver(editPatientSchema),
+  });
+
+  const fetchPatients = async () => {
+    try {
+      setLoading(true);
+      const res = await axiosInstance.get('/patients/');
+      setPatients(res.data);
+    } catch (err: any) {
+      showToast('error', err?.response?.data?.detail || 'Failed to load patients');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchPatients();
+  }, []);
+
+  const filteredPatients = patients.filter((patient) => {
+    const name = patient.users?.full_name?.toLowerCase() || '';
+    const email = patient.users?.email?.toLowerCase() || '';
+    const q = searchQuery.toLowerCase();
+    return name.includes(q) || email.includes(q);
+  });
 
   const totalPages = Math.ceil(filteredPatients.length / pageSize);
   const paginatedPatients = filteredPatients.slice(
@@ -117,49 +121,86 @@ export const Patients: React.FC = () => {
     currentPage * pageSize
   );
 
-  const handleAddPatient = (data: PatientFormData) => {
-    const newPatient = {
-      id: Math.random().toString(36).substr(2, 9),
-      ...data,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-    setPatients([...patients, newPatient]);
-    setIsAddModalOpen(false);
-    reset();
-    showToast('success', 'Patient added successfully');
+  const handleAddPatient = async (data: AddPatientFormData) => {
+    try {
+      // Step 1: Register the user account (auto-creates patient profile row)
+      await axiosInstance.post('/auth/register', {
+        email: data.email,
+        password: data.password,
+        full_name: data.full_name,
+        role: 'patient',
+      });
+
+      // Step 2: Find the new patient profile and update with medical details if provided
+      if (data.date_of_birth || data.gender || data.address) {
+        // Short wait for DB to settle, then fetch and update
+        await new Promise((r) => setTimeout(r, 500));
+        const res = await axiosInstance.get('/patients/');
+        const newPat = (res.data as any[]).find(
+          (p) => p.users?.email === data.email
+        );
+        if (newPat) {
+          const updateData: Record<string, string> = {};
+          if (data.date_of_birth) updateData.date_of_birth = data.date_of_birth;
+          if (data.gender) updateData.gender = data.gender;
+          if (data.address) updateData.address = data.address;
+          if (data.blood_group) updateData.blood_group = data.blood_group;
+          if (data.emergency_contact) updateData.emergency_contact = data.emergency_contact;
+          if (Object.keys(updateData).length > 0) {
+            await axiosInstance.patch(`/patients/${newPat.id}`, updateData);
+          }
+        }
+      }
+
+      showToast('success', `Patient account created for ${data.full_name}`);
+      setIsAddModalOpen(false);
+      resetAdd();
+      fetchPatients();
+    } catch (err: any) {
+      showToast('error', err?.response?.data?.detail || 'Failed to add patient');
+    }
   };
 
-  const handleEditPatient = (data: PatientFormData) => {
+  const handleEditPatient = async (data: EditPatientFormData) => {
     if (!selectedPatient) return;
-    setPatients(
-      patients.map((p) =>
-        p.id === selectedPatient.id
-          ? { ...p, ...data, updatedAt: new Date().toISOString() }
-          : p
-      )
-    );
-    setIsEditModalOpen(false);
-    setSelectedPatient(null);
-    reset();
-    showToast('success', 'Patient updated successfully');
+    try {
+      await axiosInstance.patch(`/patients/${selectedPatient.id}`, data);
+      showToast('success', 'Patient updated successfully');
+      setIsEditModalOpen(false);
+      setSelectedPatient(null);
+      resetEdit();
+      fetchPatients();
+    } catch (err: any) {
+      showToast('error', err?.response?.data?.detail || 'Failed to update patient');
+    }
   };
 
-  const handleDeletePatient = () => {
+  const handleDeletePatient = async () => {
     if (!selectedPatient) return;
-    setPatients(patients.filter((p) => p.id !== selectedPatient.id));
-    setIsDeleteDialogOpen(false);
-    setSelectedPatient(null);
-    showToast('success', 'Patient deleted successfully');
+    try {
+      await axiosInstance.delete(`/patients/${selectedPatient.id}`);
+      showToast('success', 'Patient deleted successfully');
+      setIsDeleteDialogOpen(false);
+      setSelectedPatient(null);
+      fetchPatients();
+    } catch (err: any) {
+      showToast('error', err?.response?.data?.detail || 'Failed to delete patient');
+    }
   };
 
-  const openEditModal = (patient: typeof mockPatients[0]) => {
+  const openEditModal = (patient: Patient) => {
     setSelectedPatient(patient);
-    reset(patient);
+    resetEdit({
+      date_of_birth: patient.date_of_birth || '',
+      gender: (patient.gender as 'male' | 'female' | 'other') || 'other',
+      address: patient.address || '',
+      blood_group: patient.blood_group || '',
+      emergency_contact: patient.emergency_contact || '',
+    });
     setIsEditModalOpen(true);
   };
 
-  const openDeleteDialog = (patient: typeof mockPatients[0]) => {
+  const openDeleteDialog = (patient: Patient) => {
     setSelectedPatient(patient);
     setIsDeleteDialogOpen(true);
   };
@@ -174,19 +215,21 @@ export const Patients: React.FC = () => {
             Manage patient records and information
           </p>
         </div>
-        <Button onClick={() => setIsAddModalOpen(true)}>
-          <Plus className="w-4 h-4 mr-2" />
-          Add Patient
-        </Button>
+        {user?.role !== 'doctor' && (
+          <Button onClick={() => setIsAddModalOpen(true)}>
+            <Plus className="w-4 h-4 mr-2" />
+            Add Patient
+          </Button>
+        )}
       </div>
 
-      {/* Search and Filters */}
+      {/* Search */}
       <Card>
         <div className="flex items-center gap-4">
           <SearchBar
             value={searchQuery}
             onChange={setSearchQuery}
-            placeholder="Search by name, email, or phone..."
+            placeholder="Search by name or email..."
             className="flex-1"
           />
         </div>
@@ -194,16 +237,20 @@ export const Patients: React.FC = () => {
 
       {/* Patients Table */}
       <Card>
-        {paginatedPatients.length === 0 ? (
+        {loading ? (
+          <div className="py-12 text-center text-sm text-text-secondary">Loading patients…</div>
+        ) : paginatedPatients.length === 0 ? (
           <EmptyState
             icon={UsersIcon}
             title="No patients found"
             description="Get started by adding your first patient"
             action={
-              <Button onClick={() => setIsAddModalOpen(true)}>
-                <Plus className="w-4 h-4 mr-2" />
-                Add Patient
-              </Button>
+              user?.role !== 'doctor' ? (
+                <Button onClick={() => setIsAddModalOpen(true)}>
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add Patient
+                </Button>
+              ) : undefined
             }
           />
         ) : (
@@ -211,24 +258,12 @@ export const Patients: React.FC = () => {
             <table className="w-full">
               <thead>
                 <tr className="border-b border-border">
-                  <th className="text-left py-3 px-4 text-sm font-semibold text-text-primary">
-                    Patient
-                  </th>
-                  <th className="text-left py-3 px-4 text-sm font-semibold text-text-primary">
-                    Contact
-                  </th>
-                  <th className="text-left py-3 px-4 text-sm font-semibold text-text-primary">
-                    Gender
-                  </th>
-                  <th className="text-left py-3 px-4 text-sm font-semibold text-text-primary">
-                    Blood Group
-                  </th>
-                  <th className="text-left py-3 px-4 text-sm font-semibold text-text-primary">
-                    Registered
-                  </th>
-                  <th className="text-right py-3 px-4 text-sm font-semibold text-text-primary">
-                    Actions
-                  </th>
+                  <th className="text-left py-3 px-4 text-sm font-semibold text-text-primary">Patient</th>
+                  <th className="text-left py-3 px-4 text-sm font-semibold text-text-primary">Gender</th>
+                  <th className="text-left py-3 px-4 text-sm font-semibold text-text-primary">Blood Group</th>
+                  <th className="text-left py-3 px-4 text-sm font-semibold text-text-primary">Emergency Contact</th>
+                  <th className="text-left py-3 px-4 text-sm font-semibold text-text-primary">Registered</th>
+                  <th className="text-right py-3 px-4 text-sm font-semibold text-text-primary">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -242,31 +277,33 @@ export const Patients: React.FC = () => {
                   >
                     <td className="py-3 px-4">
                       <div className="flex items-center gap-3">
-                        <Avatar name={patient.name} size="sm" />
+                        <Avatar name={patient.users?.full_name || 'Patient'} size="sm" />
                         <div>
                           <p className="text-sm font-medium text-text-primary">
-                            {patient.name}
+                            {patient.users?.full_name || '—'}
                           </p>
-                          <p className="text-xs text-text-secondary">{patient.email}</p>
+                          <p className="text-xs text-text-secondary">{patient.users?.email || '—'}</p>
                         </div>
                       </div>
                     </td>
                     <td className="py-3 px-4">
-                      <p className="text-sm text-text-primary">{formatPhone(patient.phone)}</p>
-                    </td>
-                    <td className="py-3 px-4">
                       <Badge variant="default" className="capitalize">
-                        {patient.gender}
+                        {patient.gender || 'N/A'}
                       </Badge>
                     </td>
                     <td className="py-3 px-4">
                       <p className="text-sm font-medium text-text-primary">
-                        {patient.bloodGroup || 'N/A'}
+                        {patient.blood_group || 'N/A'}
+                      </p>
+                    </td>
+                    <td className="py-3 px-4">
+                      <p className="text-sm text-text-primary">
+                        {patient.emergency_contact ? formatPhone(patient.emergency_contact) : 'N/A'}
                       </p>
                     </td>
                     <td className="py-3 px-4">
                       <p className="text-sm text-text-secondary">
-                        {formatDate(patient.createdAt)}
+                        {patient.created_at ? formatDate(patient.created_at) : '—'}
                       </p>
                     </td>
                     <td className="py-3 px-4">
@@ -311,74 +348,83 @@ export const Patients: React.FC = () => {
       {/* Add Patient Modal */}
       <Modal
         isOpen={isAddModalOpen}
-        onClose={() => {
-          setIsAddModalOpen(false);
-          reset();
-        }}
+        onClose={() => { setIsAddModalOpen(false); resetAdd(); }}
         title="Add New Patient"
         size="lg"
       >
-        <form onSubmit={handleSubmit(handleAddPatient)} className="space-y-4">
+        <form onSubmit={handleSubmitAdd(handleAddPatient)} className="space-y-4">
+          <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg text-xs text-blue-700">
+            This creates a full patient account. The patient can log in with the email and password you set.
+          </div>
+
           <div className="grid grid-cols-2 gap-4">
-            <Input label="Full Name" error={errors.name?.message} {...register('name')} />
             <Input
-              label="Email"
+              label="Full Name *"
+              placeholder="e.g. John Smith"
+              error={addErrors.full_name?.message}
+              {...registerAdd('full_name')}
+            />
+            <Input
+              label="Email *"
               type="email"
-              error={errors.email?.message}
-              {...register('email')}
+              placeholder="patient@email.com"
+              error={addErrors.email?.message}
+              {...registerAdd('email')}
             />
           </div>
-          <div className="grid grid-cols-2 gap-4">
-            <Input
-              label="Phone"
-              type="tel"
-              error={errors.phone?.message}
-              {...register('phone')}
-            />
-            <Input
-              label="Date of Birth"
-              type="date"
-              error={errors.dateOfBirth?.message}
-              {...register('dateOfBirth')}
-            />
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <Select
-              label="Gender"
-              options={[
-                { value: 'male', label: 'Male' },
-                { value: 'female', label: 'Female' },
-                { value: 'other', label: 'Other' },
-              ]}
-              error={errors.gender?.message}
-              {...register('gender')}
-            />
-            <Input
-              label="Blood Group"
-              placeholder="e.g., O+, A-, B+"
-              error={errors.bloodGroup?.message}
-              {...register('bloodGroup')}
-            />
-          </div>
-          <Input label="Address" error={errors.address?.message} {...register('address')} />
           <Input
-            label="Emergency Contact"
-            type="tel"
-            error={errors.emergencyContact?.message}
-            {...register('emergencyContact')}
+            label="Password *"
+            type="password"
+            placeholder="Min 6 characters"
+            error={addErrors.password?.message}
+            {...registerAdd('password')}
           />
+
+          <div className="border-t border-border pt-4">
+            <p className="text-xs font-semibold text-text-secondary uppercase tracking-wider mb-3">Medical Details (optional)</p>
+            <div className="grid grid-cols-2 gap-4">
+              <Input
+                label="Date of Birth"
+                type="date"
+                error={addErrors.date_of_birth?.message}
+                {...registerAdd('date_of_birth')}
+              />
+              <Select
+                label="Gender"
+                options={[
+                  { value: 'male', label: 'Male' },
+                  { value: 'female', label: 'Female' },
+                  { value: 'other', label: 'Other' },
+                ]}
+                error={addErrors.gender?.message}
+                {...registerAdd('gender')}
+              />
+            </div>
+            <div className="mt-3">
+              <Input label="Address" placeholder="123 Main St, City" error={addErrors.address?.message} {...registerAdd('address')} />
+            </div>
+            <div className="grid grid-cols-2 gap-4 mt-3">
+              <Input
+                label="Blood Group"
+                placeholder="e.g., O+, A-, B+"
+                error={addErrors.blood_group?.message}
+                {...registerAdd('blood_group')}
+              />
+              <Input
+                label="Emergency Contact"
+                type="tel"
+                placeholder="Phone number"
+                error={addErrors.emergency_contact?.message}
+                {...registerAdd('emergency_contact')}
+              />
+            </div>
+          </div>
+
           <div className="flex justify-end gap-3 pt-4">
-            <Button
-              type="button"
-              variant="ghost"
-              onClick={() => {
-                setIsAddModalOpen(false);
-                reset();
-              }}
-            >
+            <Button type="button" variant="ghost" onClick={() => { setIsAddModalOpen(false); resetAdd(); }}>
               Cancel
             </Button>
-            <Button type="submit">Add Patient</Button>
+            <Button type="submit">Create Patient Account</Button>
           </div>
         </form>
       </Modal>
@@ -386,39 +432,24 @@ export const Patients: React.FC = () => {
       {/* Edit Patient Modal */}
       <Modal
         isOpen={isEditModalOpen}
-        onClose={() => {
-          setIsEditModalOpen(false);
-          setSelectedPatient(null);
-          reset();
-        }}
+        onClose={() => { setIsEditModalOpen(false); setSelectedPatient(null); resetEdit(); }}
         title="Edit Patient"
         size="lg"
       >
-        <form onSubmit={handleSubmit(handleEditPatient)} className="space-y-4">
+        <form onSubmit={handleSubmitEdit(handleEditPatient)} className="space-y-4">
+          {selectedPatient && (
+            <div className="p-3 bg-primary-secondary rounded-lg text-sm">
+              <p className="font-semibold text-text-primary">{selectedPatient.users?.full_name}</p>
+              <p className="text-text-secondary text-xs">{selectedPatient.users?.email}</p>
+            </div>
+          )}
           <div className="grid grid-cols-2 gap-4">
-            <Input label="Full Name" error={errors.name?.message} {...register('name')} />
-            <Input
-              label="Email"
-              type="email"
-              error={errors.email?.message}
-              {...register('email')}
-            />
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <Input
-              label="Phone"
-              type="tel"
-              error={errors.phone?.message}
-              {...register('phone')}
-            />
             <Input
               label="Date of Birth"
               type="date"
-              error={errors.dateOfBirth?.message}
-              {...register('dateOfBirth')}
+              error={editErrors.date_of_birth?.message}
+              {...registerEdit('date_of_birth')}
             />
-          </div>
-          <div className="grid grid-cols-2 gap-4">
             <Select
               label="Gender"
               options={[
@@ -426,33 +457,27 @@ export const Patients: React.FC = () => {
                 { value: 'female', label: 'Female' },
                 { value: 'other', label: 'Other' },
               ]}
-              error={errors.gender?.message}
-              {...register('gender')}
+              error={editErrors.gender?.message}
+              {...registerEdit('gender')}
             />
+          </div>
+          <Input label="Address" error={editErrors.address?.message} {...registerEdit('address')} />
+          <div className="grid grid-cols-2 gap-4">
             <Input
               label="Blood Group"
               placeholder="e.g., O+, A-, B+"
-              error={errors.bloodGroup?.message}
-              {...register('bloodGroup')}
+              error={editErrors.blood_group?.message}
+              {...registerEdit('blood_group')}
+            />
+            <Input
+              label="Emergency Contact"
+              type="tel"
+              error={editErrors.emergency_contact?.message}
+              {...registerEdit('emergency_contact')}
             />
           </div>
-          <Input label="Address" error={errors.address?.message} {...register('address')} />
-          <Input
-            label="Emergency Contact"
-            type="tel"
-            error={errors.emergencyContact?.message}
-            {...register('emergencyContact')}
-          />
           <div className="flex justify-end gap-3 pt-4">
-            <Button
-              type="button"
-              variant="ghost"
-              onClick={() => {
-                setIsEditModalOpen(false);
-                setSelectedPatient(null);
-                reset();
-              }}
-            >
+            <Button type="button" variant="ghost" onClick={() => { setIsEditModalOpen(false); setSelectedPatient(null); resetEdit(); }}>
               Cancel
             </Button>
             <Button type="submit">Update Patient</Button>
@@ -460,16 +485,13 @@ export const Patients: React.FC = () => {
         </form>
       </Modal>
 
-      {/* Delete Confirmation Dialog */}
+      {/* Delete Confirmation */}
       <ConfirmDialog
         isOpen={isDeleteDialogOpen}
-        onClose={() => {
-          setIsDeleteDialogOpen(false);
-          setSelectedPatient(null);
-        }}
+        onClose={() => { setIsDeleteDialogOpen(false); setSelectedPatient(null); }}
         onConfirm={handleDeletePatient}
         title="Delete Patient"
-        message={`Are you sure you want to delete ${selectedPatient?.name}? This action cannot be undone.`}
+        message={`Are you sure you want to delete ${selectedPatient?.users?.full_name}? This action cannot be undone.`}
         confirmText="Delete"
         variant="danger"
       />

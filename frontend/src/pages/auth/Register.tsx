@@ -7,14 +7,17 @@ import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { Select } from '../../components/ui/Select';
 import { useToast } from '../../contexts/ToastContext';
+import { useAuth } from '../../contexts/AuthContext';
 import { motion } from 'framer-motion';
+import axiosInstance from '../../lib/axios';
+import { storage } from '../../utils/storage';
 
 const registerSchema = z
   .object({
     name: z.string().min(2, 'Name must be at least 2 characters'),
     email: z.string().email('Invalid email address'),
     phone: z.string().min(10, 'Invalid phone number'),
-    role: z.enum(['patient', 'doctor']),
+    role: z.enum(['patient', 'doctor', 'receptionist']),
     password: z.string().min(6, 'Password must be at least 6 characters'),
     confirmPassword: z.string(),
   })
@@ -28,6 +31,7 @@ type RegisterFormData = z.infer<typeof registerSchema>;
 export const Register: React.FC = () => {
   const navigate = useNavigate();
   const { showToast } = useToast();
+  const { login } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
 
   const {
@@ -41,13 +45,57 @@ export const Register: React.FC = () => {
   const onSubmit = async (data: RegisterFormData) => {
     setIsLoading(true);
     try {
-      // Mock registration - Replace with actual API call
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      
-      showToast('success', 'Registration successful! Please login.');
-      navigate('/login');
-    } catch (error) {
-      showToast('error', 'Registration failed. Please try again.');
+      // 1. Register the user
+      await axiosInstance.post('/auth/register', {
+        email: data.email,
+        password: data.password,
+        full_name: data.name,
+        role: data.role,
+      });
+
+      // 2. Auto-login after registration
+      const loginRes = await axiosInstance.post('/auth/login', {
+        email: data.email,
+        password: data.password,
+      });
+
+      const { access_token, user: dbUser } = loginRes.data;
+      const userObj = {
+        id: dbUser.id,
+        email: dbUser.email,
+        name: dbUser.full_name,
+        role: dbUser.role,
+        phone: data.phone,
+        createdAt: dbUser.created_at || new Date().toISOString(),
+      };
+      login(userObj, access_token);
+
+      // 3. Auto-create profile based on role
+      if (data.role === 'patient') {
+        try {
+          await axiosInstance.post('/patients/', {
+            date_of_birth: null,
+            gender: null,
+            address: '',
+            blood_group: null,
+            emergency_contact: null,
+          });
+        } catch {
+          // Profile may already exist or will be created later
+        }
+        showToast('success', 'Account created! Complete your profile in Settings.');
+        navigate('/dashboard');
+      } else if (data.role === 'doctor') {
+        // Redirect doctor to complete their profile first
+        showToast('success', 'Account created! Please complete your doctor profile.');
+        navigate('/complete-doctor-profile');
+      } else {
+        showToast('success', 'Account created successfully!');
+        navigate('/dashboard');
+      }
+    } catch (error: any) {
+      const msg = error?.response?.data?.detail || 'Registration failed. Please try again.';
+      showToast('error', msg);
     } finally {
       setIsLoading(false);
     }
@@ -97,6 +145,7 @@ export const Register: React.FC = () => {
               options={[
                 { value: 'patient', label: 'Patient' },
                 { value: 'doctor', label: 'Doctor' },
+                { value: 'receptionist', label: 'Receptionist' },
               ]}
               error={errors.role?.message}
               {...register('role')}

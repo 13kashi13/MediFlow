@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Menu, Bell, LogOut, User, ChevronDown } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { Avatar } from '../ui/Avatar';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
+import { axiosInstance } from '../../lib/axios';
 
 interface NavbarProps {
   onMenuClick: () => void;
@@ -12,7 +13,24 @@ interface NavbarProps {
 export const Navbar: React.FC<NavbarProps> = ({ onMenuClick }) => {
   const { user, logout } = useAuth();
   const [showDropdown, setShowDropdown] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const fetchUnread = async () => {
+      try {
+        const res = await axiosInstance.get('/notifications/');
+        const count = (res.data as any[]).filter((n) => !(n.is_read ?? n.isRead)).length;
+        setUnreadCount(count);
+      } catch {
+        // non-critical
+      }
+    };
+    fetchUnread();
+    // Poll every 30s to keep badge fresh
+    const interval = setInterval(fetchUnread, 30000);
+    return () => clearInterval(interval);
+  }, []);
 
   const handleLogout = () => {
     logout();
@@ -44,7 +62,11 @@ export const Navbar: React.FC<NavbarProps> = ({ onMenuClick }) => {
           className="relative p-2 hover:bg-primary-secondary rounded-lg transition-colors"
         >
           <Bell className="w-5 h-5 text-text-primary" />
-          <span className="absolute top-1 right-1 w-2 h-2 bg-danger rounded-full"></span>
+          {unreadCount > 0 && (
+            <span className="absolute top-1 right-1 min-w-[16px] h-4 bg-danger rounded-full flex items-center justify-center text-[9px] font-bold text-white px-0.5">
+              {unreadCount > 9 ? '9+' : unreadCount}
+            </span>
+          )}
         </button>
 
         {/* User Menu */}

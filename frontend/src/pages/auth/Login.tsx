@@ -8,6 +8,7 @@ import { Input } from '../../components/ui/Input';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
 import { motion } from 'framer-motion';
+import axiosInstance from '../../lib/axios';
 
 const loginSchema = z.object({
   email: z.string().email('Invalid email address'),
@@ -33,39 +34,27 @@ export const Login: React.FC = () => {
   const onSubmit = async (data: LoginFormData) => {
     setIsLoading(true);
     try {
-      // Mock authentication - Replace with actual API call
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      
-      // Determine mock role based on email prefix
-      let role: 'admin' | 'doctor' | 'receptionist' | 'patient' = 'admin';
-      let name = 'Dr. Sarah Johnson';
-
-      if (data.email.startsWith('doctor')) {
-        role = 'doctor';
-        name = 'Dr. Michael Chen';
-      } else if (data.email.startsWith('receptionist')) {
-        role = 'receptionist';
-        name = 'Jane Smith';
-      } else if (data.email.startsWith('patient')) {
-        role = 'patient';
-        name = 'Robert Brown';
-      }
-
-      const mockUser = {
-        id: '1',
+      const response = await axiosInstance.post('/auth/login', {
         email: data.email,
-        name: name,
-        role: role,
-        createdAt: new Date().toISOString(),
+        password: data.password,
+      });
+
+      const { access_token, user: dbUser } = response.data;
+
+      const user = {
+        id: dbUser.id,
+        email: dbUser.email,
+        name: dbUser.full_name,
+        role: dbUser.role,
+        createdAt: dbUser.created_at ?? new Date().toISOString(),
       };
-      
-      const mockToken = 'mock-jwt-token';
-      
-      login(mockUser, mockToken);
+
+      login(user, access_token);
       showToast('success', 'Login successful!');
       navigate('/dashboard');
-    } catch (error) {
-      showToast('error', 'Login failed. Please check your credentials.');
+    } catch (error: any) {
+      const msg = error?.response?.data?.detail || 'Login failed. Please check your credentials.';
+      showToast('error', msg);
     } finally {
       setIsLoading(false);
     }
@@ -133,16 +122,7 @@ export const Login: React.FC = () => {
             </p>
           </div>
 
-          {/* Demo Credentials */}
-          <div className="mt-6 p-4 bg-primary-secondary rounded-lg">
-            <p className="text-xs font-semibold text-text-primary mb-2">Demo Accounts (Password: password123):</p>
-            <div className="grid grid-cols-2 gap-2">
-              <p className="text-xs text-text-secondary">• admin@...</p>
-              <p className="text-xs text-text-secondary">• doctor@...</p>
-              <p className="text-xs text-text-secondary">• receptionist@...</p>
-              <p className="text-xs text-text-secondary">• patient@...</p>
-            </div>
-          </div>
+
         </div>
       </motion.div>
     </div>

@@ -7,6 +7,7 @@ export interface User {
   phone?: string;
   avatar?: string;
   createdAt: string;
+  qualification?: string;
 }
 
 // Patient Types
@@ -199,7 +200,7 @@ export interface RegisterFormData {
   email: string;
   password: string;
   confirmPassword: string;
-  role: 'patient' | 'doctor';
+  role: 'patient' | 'doctor' | 'receptionist';
   phone: string;
 }
 

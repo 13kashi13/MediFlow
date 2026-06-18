@@ -8,6 +8,7 @@ import { Landing } from './pages/Landing';
 import { Login } from './pages/auth/Login';
 import { Register } from './pages/auth/Register';
 import { ForgotPassword } from './pages/auth/ForgotPassword';
+import { CompleteDoctorProfile } from './pages/auth/CompleteDoctorProfile';
 import { Dashboard } from './pages/Dashboard';
 import { Patients } from './pages/Patients';
 import { Doctors } from './pages/Doctors';
@@ -39,6 +40,11 @@ function App() {
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
               <Route path="/forgot-password" element={<ForgotPassword />} />
+              <Route path="/complete-doctor-profile" element={
+                <ProtectedRoute allowedRoles={['doctor']}>
+                  <CompleteDoctorProfile />
+                </ProtectedRoute>
+              } />
               
               <Route path="/dashboard" element={
                 <ProtectedRoute>
