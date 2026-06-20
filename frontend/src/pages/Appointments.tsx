@@ -310,15 +310,34 @@ export const Appointments: React.FC = () => {
                     <span className="capitalize">{apt.appointment_type}</span>
                   </div>
                   <div className="flex gap-2 mt-3">
-                    {apt.status === 'scheduled' && user?.role !== 'admin' && (
-                      <Button size="sm" variant="primary" onClick={() => updateStatus(apt.id, 'confirmed')}>Confirm</Button>
-                    )}
-                    {(apt.status === 'scheduled' || apt.status === 'confirmed') && (
+                    {/* ── PATIENT: only Confirm Attendance (scheduled) or message (confirmed) ── */}
+                    {user?.role === 'patient' && apt.status === 'scheduled' && (
                       <>
-                        {user?.role !== 'admin' && (
-                          <Button size="sm" variant="secondary" onClick={() => updateStatus(apt.id, 'completed')}>Complete</Button>
+                        <Button size="sm" variant="primary" onClick={() => updateStatus(apt.id, 'confirmed')}>
+                          ✓ Confirm Attendance
+                        </Button>
+                        <Button size="sm" variant="danger" onClick={() => updateStatus(apt.id, 'cancelled')}>
+                          Cancel
+                        </Button>
+                      </>
+                    )}
+                    {user?.role === 'patient' && apt.status === 'confirmed' && (
+                      <span className="text-xs text-success font-semibold">✓ Attendance confirmed — see you soon!</span>
+                    )}
+                    {/* ── STAFF: full controls ── */}
+                    {user?.role !== 'patient' && (
+                      <>
+                        {apt.status === 'scheduled' && user?.role !== 'admin' && (
+                          <Button size="sm" variant="primary" onClick={() => updateStatus(apt.id, 'confirmed')}>Confirm</Button>
                         )}
-                        <Button size="sm" variant="danger" onClick={() => updateStatus(apt.id, 'cancelled')}>Cancel</Button>
+                        {(apt.status === 'scheduled' || apt.status === 'confirmed') && (
+                          <>
+                            {user?.role !== 'admin' && (
+                              <Button size="sm" variant="secondary" onClick={() => updateStatus(apt.id, 'completed')}>Complete</Button>
+                            )}
+                            <Button size="sm" variant="danger" onClick={() => updateStatus(apt.id, 'cancelled')}>Cancel</Button>
+                          </>
+                        )}
                       </>
                     )}
                   </div>
