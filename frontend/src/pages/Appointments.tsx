@@ -95,19 +95,26 @@ export const Appointments: React.FC = () => {
   const watchedDoctor = watch('doctor_id');
   const watchedTime   = watch('appointment_time');
 
-  // Booked slots for the chosen doctor+date (exclude cancelled)
+  const [docAppointments, setDocAppointments] = useState<{appointment_time: string; status: string}[]>([]);
+
+  useEffect(() => {
+    if (!watchedDoctor || !watchedDate) { setDocAppointments([]); return; }
+    // Fetch booked slots for this doctor+date — visible to all roles
+    axiosInstance.get(`/appointments/slots?doctor_id=${watchedDoctor}&date=${watchedDate}`)
+      .then(r => {
+        // r.data is string[] of "HH:MM"
+        setDocAppointments(r.data.map((t: string) => ({ appointment_time: t, status: 'scheduled', doctor_id: watchedDoctor, appointment_date: watchedDate })));
+      })
+      .catch(() => {});
+  }, [watchedDoctor, watchedDate]);
+
+  // Booked slots for the chosen doctor+date
   const bookedSlots = React.useMemo(() => {
     if (!watchedDate || !watchedDoctor) return new Set<string>();
-    return new Set(
-      appointments
-        .filter(a =>
-          a.doctor_id === watchedDoctor &&
-          a.appointment_date === watchedDate &&
-          a.status !== 'cancelled'
-        )
-        .map(a => a.appointment_time.slice(0, 5))
+    return new Set<string>(
+      docAppointments.map((a: any) => (a.appointment_time || '').slice(0, 5))
     );
-  }, [appointments, watchedDate, watchedDoctor]);
+  }, [docAppointments, watchedDate, watchedDoctor]);
 
   const fetchAll = useCallback(async () => {
     try {

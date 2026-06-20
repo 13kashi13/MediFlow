@@ -262,6 +262,18 @@ def create_appointment(appointment: AppointmentCreate, user=Depends(get_current_
     return appt
 
 
+@appointments_router.get("/slots")
+def get_booked_slots(doctor_id: str, date: str, user=Depends(get_current_user)):
+    """Return booked time slots for a doctor on a given date. Available to all roles."""
+    res = supabase_admin.table("appointments") \
+        .select("appointment_time") \
+        .eq("doctor_id", doctor_id) \
+        .eq("appointment_date", date) \
+        .neq("status", "cancelled") \
+        .execute()
+    return [r["appointment_time"][:5] for r in (res.data or [])]
+
+
 @appointments_router.get("/")
 def get_appointments(user=Depends(get_current_user)):
     query = supabase_admin.table("appointments").select(
