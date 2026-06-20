@@ -148,7 +148,7 @@ export const Prescriptions: React.FC = () => {
           <h1 className="text-2xl font-bold text-text-primary">Prescriptions</h1>
           <p className="text-sm text-text-secondary mt-1">Manage medical prescriptions</p>
         </div>
-        {user?.role !== 'admin' && (
+        {user?.role === 'doctor' && (
           <Button onClick={() => setIsAddModalOpen(true)}>
             <Plus className="w-4 h-4 mr-2" />
             Create Prescription
@@ -175,7 +175,7 @@ export const Prescriptions: React.FC = () => {
             title="No prescriptions found"
             description="Create your first prescription"
             action={
-              user?.role !== 'admin' ? (
+              user?.role === 'doctor' ? (
                 <Button onClick={() => setIsAddModalOpen(true)}>
                   <Plus className="w-4 h-4 mr-2" />
                   Create Prescription

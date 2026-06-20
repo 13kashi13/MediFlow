@@ -193,6 +193,27 @@ appointments_router = APIRouter(prefix="/appointments", tags=["Appointments"])
 def create_appointment(appointment: AppointmentCreate, user=Depends(get_current_user)):
     data = {k: v for k, v in appointment.dict().items() if v is not None}
     data["status"] = "scheduled"
+
+    # ── Server-side duplicate slot guard ─────────────────────────────
+    # Reject if the same doctor already has a non-cancelled appointment
+    # at the exact same date + time (first 5 chars = HH:MM)
+    slot_time = data.get("appointment_time", "")[:5]
+    conflict = supabase_admin.table("appointments") \
+        .select("id") \
+        .eq("doctor_id",        data["doctor_id"]) \
+        .eq("appointment_date", data["appointment_date"]) \
+        .eq("appointment_time", slot_time) \
+        .neq("status",          "cancelled") \
+        .execute()
+    if conflict.data:
+        raise HTTPException(
+            status_code=409,
+            detail="This time slot is already booked for the selected doctor. Please choose a different slot."
+        )
+
+    # Normalise time to HH:MM
+    data["appointment_time"] = slot_time
+
     res = supabase_admin.table("appointments").insert(data).execute()
     if not res.data:
         raise HTTPException(status_code=400, detail="Failed to create appointment")
