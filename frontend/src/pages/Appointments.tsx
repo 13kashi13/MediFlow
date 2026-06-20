@@ -39,7 +39,8 @@ function to12h(slot: string): string {
 
 // ── Schema ────────────────────────────────────────────────────────────
 const appointmentSchema = z.object({
-  patient_id:       z.string().min(1, 'Patient is required'),
+  // patient_id is optional in the form — auto-resolved for patients at submit time
+  patient_id:       z.string().optional(),
   doctor_id:        z.string().min(1, 'Doctor is required'),
   appointment_date: z.string().min(1, 'Date is required'),
   appointment_time: z.string().min(1, 'Please select a time slot'),
@@ -149,12 +150,10 @@ export const Appointments: React.FC = () => {
   };
 
   const handleBook = async (data: AppointmentFormData) => {
-    // Hard guard against rapid clicks
     if (isSubmittingRef.current) return;
     isSubmittingRef.current = true;
     setSubmitting(true);
 
-    // Client-side slot conflict check
     if (bookedSlots.has(data.appointment_time)) {
       showToast('error', 'This slot is already taken. Choose another time.');
       isSubmittingRef.current = false;
@@ -162,13 +161,44 @@ export const Appointments: React.FC = () => {
       return;
     }
 
-    const myProfile = user?.role === 'patient'
-      ? patients.find(p => p.user_id === user.id || p.users?.id === user.id)
-      : null;
+    // Resolve patient_id — for patients fetch their own profile at submit time
+    let resolvedPatientId = data.patient_id || '';
+
+    if (user?.role === 'patient') {
+      // Try from already-loaded patients list first
+      let myProfile = patients.find(
+        p => p.user_id === user.id || (p as any).users?.id === user.id
+      );
+      // If not found (list empty or mismatch), re-fetch
+      if (!myProfile) {
+        try {
+          const res = await axiosInstance.get('/patients/');
+          const fresh: PatientOption[] = res.data;
+          setPatients(fresh);
+          myProfile = fresh.find(
+            p => p.user_id === user.id || (p as any).users?.id === user.id
+          );
+        } catch { /* ignore */ }
+      }
+      if (!myProfile) {
+        showToast('error', 'Patient profile not found. Please complete your profile first.');
+        isSubmittingRef.current = false;
+        setSubmitting(false);
+        return;
+      }
+      resolvedPatientId = myProfile.id;
+    }
+
+    if (!resolvedPatientId) {
+      showToast('error', 'Please select a patient.');
+      isSubmittingRef.current = false;
+      setSubmitting(false);
+      return;
+    }
 
     const payload = {
       ...data,
-      patient_id: user?.role === 'patient' && myProfile ? myProfile.id : data.patient_id,
+      patient_id: resolvedPatientId,
       duration: 15,
     };
 
@@ -330,7 +360,7 @@ export const Appointments: React.FC = () => {
 
           {/* Patient select (hidden for patients) */}
           {user?.role !== 'patient' && (
-            <Select label="Patient"
+            <Select label="Patient *"
               options={patients.map(p => ({ value: p.id, label: p.users?.full_name || p.id }))}
               error={errors.patient_id?.message}
               {...register('patient_id')}
