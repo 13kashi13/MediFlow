@@ -43,11 +43,21 @@ export const CompleteDoctorProfile: React.FC = () => {
   const onSubmit = async (data: DoctorProfileFormData) => {
     setIsLoading(true);
     try {
-      await axiosInstance.post('/doctors/', data);
-      showToast('success', 'Doctor profile created! Welcome to MediFlow.');
+      // Find existing placeholder doctor profile and update it (PATCH),
+      // rather than creating a duplicate (POST)
+      const docRes = await axiosInstance.get('/doctors/');
+      const myProfile = (docRes.data as any[]).find(
+        (d) => d.user_id === user?.id || d.users?.id === user?.id
+      );
+      if (myProfile) {
+        await axiosInstance.patch(`/doctors/${myProfile.id}`, data);
+      } else {
+        await axiosInstance.post('/doctors/', data);
+      }
+      showToast('success', 'Doctor profile updated! Welcome to MediFlow.');
       navigate('/dashboard');
     } catch (error: any) {
-      const msg = error?.response?.data?.detail || 'Failed to create doctor profile.';
+      const msg = error?.response?.data?.detail || 'Failed to update doctor profile.';
       showToast('error', msg);
     } finally {
       setIsLoading(false);

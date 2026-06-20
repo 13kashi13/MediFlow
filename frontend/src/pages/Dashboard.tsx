@@ -18,7 +18,11 @@ export const Dashboard: React.FC = () => {
     case 'patient':
       return <PatientDashboard />;
     default:
-      // Fallback for unknown roles or if user is somehow null
-      return <AdminDashboard />;
+      return (
+        <div className="flex flex-col items-center justify-center h-64 text-center">
+          <p className="text-lg font-semibold text-text-primary">Role not recognized</p>
+          <p className="text-sm text-text-secondary mt-2">Your account role is invalid. Please contact your administrator.</p>
+        </div>
+      );
   }
 };

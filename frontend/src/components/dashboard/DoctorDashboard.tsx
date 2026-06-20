@@ -114,10 +114,10 @@ export const DoctorDashboard: React.FC = () => {
     return () => clearInterval(interval);
   }, [fetchData]);
 
-  // Only this doctor's appointments
+  // Only this doctor's appointments — empty array (not all) when profile not loaded yet
   const myAppointments = doctorProfile
     ? appointments.filter((a) => a.doctor_id === doctorProfile.id)
-    : appointments;
+    : [];
 
   const todayApts = myAppointments.filter((a) => a.appointment_date === today && a.status !== 'cancelled');
   const upcomingApts = myAppointments.filter((a) => a.appointment_date > today && a.status !== 'cancelled');
@@ -325,19 +325,21 @@ export const DoctorDashboard: React.FC = () => {
                             <button
                               onClick={() => updateStatus(apt.id, 'completed')}
                               title="Mark checkup done"
-                              className="flex items-center gap-1 px-2.5 py-1.5 bg-green-50 text-green-700 border border-green-200 text-xs font-semibold rounded-lg hover:bg-green-100 transition-colors"
+                              disabled={loading}
+                              className="flex items-center gap-1 px-2.5 py-1.5 bg-green-50 text-green-700 border border-green-200 text-xs font-semibold rounded-lg hover:bg-green-100 transition-colors disabled:opacity-50"
                             >
                               <CheckCircle2 className="w-3.5 h-3.5" /> Done
                             </button>
                             {/* Write prescription */}
-                            <Button size="sm" onClick={() => openVisitModal(apt)}>
+                            <Button size="sm" onClick={() => openVisitModal(apt)} disabled={loading || !doctorProfile}>
                               Prescribe
                             </Button>
                             {/* Upload medical report */}
                             <button
                               onClick={() => openMedRecordModal(apt)}
                               title="Upload Medical Report"
-                              className="flex items-center gap-1 px-2.5 py-1.5 bg-blue-50 text-blue-700 border border-blue-200 text-xs font-semibold rounded-lg hover:bg-blue-100 transition-colors"
+                              disabled={loading || !doctorProfile}
+                              className="flex items-center gap-1 px-2.5 py-1.5 bg-blue-50 text-blue-700 border border-blue-200 text-xs font-semibold rounded-lg hover:bg-blue-100 transition-colors disabled:opacity-50"
                             >
                               <ClipboardList className="w-3.5 h-3.5" /> Report
                             </button>

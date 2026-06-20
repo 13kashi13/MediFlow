@@ -71,9 +71,15 @@ export const Notifications: React.FC = () => {
   };
 
   const markAllAsRead = async () => {
-    const unread = notifications.filter((n) => !n.isRead);
-    await Promise.allSettled(unread.map((n) => axiosInstance.patch(`/notifications/${n.id}/read`)));
-    setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
+    try {
+      await axiosInstance.patch('/notifications/read-all');
+      setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
+    } catch {
+      // fallback: mark individually
+      const unread = notifications.filter((n) => !n.isRead);
+      await Promise.allSettled(unread.map((n) => axiosInstance.patch(`/notifications/${n.id}/read`)));
+      setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
+    }
   };
 
   return (

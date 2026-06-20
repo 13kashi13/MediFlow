@@ -14,6 +14,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useToast } from '../contexts/ToastContext';
+import { useAuth } from '../contexts/AuthContext';
 import { formatDate, formatPhone } from '../utils/format';
 import { motion } from 'framer-motion';
 import { axiosInstance } from '../lib/axios';
@@ -45,6 +46,8 @@ type Doctor = {
 
 export const Doctors: React.FC = () => {
   const { showToast } = useToast();
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'admin';
   const [doctors, setDoctors] = useState<Doctor[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -151,10 +154,12 @@ export const Doctors: React.FC = () => {
           <h1 className="text-2xl font-bold text-text-primary">Doctors</h1>
           <p className="text-sm text-text-secondary mt-1">Manage doctor profiles and availability</p>
         </div>
-        <Button onClick={() => setIsAddModalOpen(true)}>
-          <Plus className="w-4 h-4 mr-2" />
-          Add Doctor
-        </Button>
+        {isAdmin && (
+          <Button onClick={() => setIsAddModalOpen(true)}>
+            <Plus className="w-4 h-4 mr-2" />
+            Add Doctor
+          </Button>
+        )}
       </div>
 
       <Card>
@@ -174,10 +179,12 @@ export const Doctors: React.FC = () => {
             title="No doctors found"
             description="Get started by adding your first doctor"
             action={
-              <Button onClick={() => setIsAddModalOpen(true)}>
-                <Plus className="w-4 h-4 mr-2" />
-                Add Doctor
-              </Button>
+              isAdmin ? (
+                <Button onClick={() => setIsAddModalOpen(true)}>
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add Doctor
+                </Button>
+              ) : undefined
             }
           />
         ) : (
@@ -229,18 +236,22 @@ export const Doctors: React.FC = () => {
                     </td>
                     <td className="py-3 px-4">
                       <div className="flex items-center justify-end gap-2">
-                        <button
-                          onClick={() => openEditModal(doctor)}
-                          className="p-2 text-text-secondary hover:text-primary-teal hover:bg-primary-secondary rounded-lg transition-colors"
-                        >
-                          <Edit className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => { setSelectedDoctor(doctor); setIsDeleteDialogOpen(true); }}
-                          className="p-2 text-text-secondary hover:text-danger hover:bg-red-50 rounded-lg transition-colors"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+                        {isAdmin && (
+                          <>
+                            <button
+                              onClick={() => openEditModal(doctor)}
+                              className="p-2 text-text-secondary hover:text-primary-teal hover:bg-primary-secondary rounded-lg transition-colors"
+                            >
+                              <Edit className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => { setSelectedDoctor(doctor); setIsDeleteDialogOpen(true); }}
+                              className="p-2 text-text-secondary hover:text-danger hover:bg-red-50 rounded-lg transition-colors"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </>
+                        )}
                       </div>
                     </td>
                   </motion.tr>

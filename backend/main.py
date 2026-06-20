@@ -126,6 +126,8 @@ def update_patient(id: str, patient: PatientUpdate, user=Depends(get_current_use
 
 @patients_router.delete("/{id}")
 def delete_patient(id: str, user=Depends(get_current_user)):
+    if user.get("role") not in ("admin", "receptionist"):
+        raise HTTPException(status_code=403, detail="Not authorized to delete patients")
     res = supabase_admin.table("patients").delete().eq("id", id).execute()
     if not res.data:
         raise HTTPException(status_code=404, detail="Patient profile not found")
@@ -139,6 +141,8 @@ doctors_router = APIRouter(prefix="/doctors", tags=["Doctors"])
 
 @doctors_router.post("/")
 def add_doctor(doc: DoctorCreate, user=Depends(get_current_user)):
+    if user.get("role") not in ("admin", "doctor"):
+        raise HTTPException(status_code=403, detail="Only doctors can create their own profile")
     data = doc.dict()
     data["user_id"] = user["id"]
     res = supabase_admin.table("doctors").insert(data).execute()
@@ -168,6 +172,8 @@ def get_doctors(user=Depends(get_current_user)):
 
 @doctors_router.patch("/{id}")
 def update_doctor(id: str, doc: DoctorUpdate, user=Depends(get_current_user)):
+    if user.get("role") not in ("admin", "doctor"):
+        raise HTTPException(status_code=403, detail="Not authorized")
     data = {k: v for k, v in doc.dict().items() if v is not None}
     if not data:
         raise HTTPException(status_code=400, detail="No fields to update")
@@ -178,6 +184,8 @@ def update_doctor(id: str, doc: DoctorUpdate, user=Depends(get_current_user)):
 
 @doctors_router.delete("/{id}")
 def delete_doctor(id: str, user=Depends(get_current_user)):
+    if user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Only admins can delete doctor profiles")
     res = supabase_admin.table("doctors").delete().eq("id", id).execute()
     if not res.data:
         raise HTTPException(status_code=404, detail="Doctor not found")
@@ -297,6 +305,9 @@ def get_appointments(user=Depends(get_current_user)):
 
 @appointments_router.patch("/{id}")
 def update_status(id: str, body: AppointmentStatusUpdate, user=Depends(get_current_user)):
+    VALID_STATUSES = {"scheduled", "confirmed", "completed", "cancelled", "no-show"}
+    if body.status not in VALID_STATUSES:
+        raise HTTPException(status_code=400, detail=f"Invalid status. Must be one of: {', '.join(VALID_STATUSES)}")
     existing_res = supabase_admin.table("appointments").select(
         "patient_id, doctor_id, appointment_date, appointment_time, appointment_type, status"
     ).eq("id", id).execute()
@@ -379,6 +390,8 @@ prescriptions_router = APIRouter(prefix="/prescriptions", tags=["Prescriptions"]
 
 @prescriptions_router.post("/")
 def create_prescription(pres: PrescriptionCreate, user=Depends(get_current_user)):
+    if user.get("role") not in ("admin", "doctor"):
+        raise HTTPException(status_code=403, detail="Only doctors can create prescriptions")
     pres_data = {
         "patient_id": pres.patient_id,
         "doctor_id": pres.doctor_id,
@@ -454,6 +467,8 @@ medical_records_router = APIRouter(prefix="/medical-records", tags=["Medical Rec
 
 @medical_records_router.post("/")
 def create_medical_record(rec: MedicalRecordCreate, user=Depends(get_current_user)):
+    if user.get("role") not in ("admin", "doctor"):
+        raise HTTPException(status_code=403, detail="Only doctors can upload medical records")
     res = supabase_admin.table("medical_records").insert(rec.dict()).execute()
     if not res.data:
         raise HTTPException(status_code=400, detail="Failed to create medical record")

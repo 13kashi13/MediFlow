@@ -91,14 +91,17 @@ export const PatientDashboard: React.FC = () => {
     }
   };
 
-  // Upcoming = today or future, not cancelled
+  // Upcoming = today or future, only active statuses (scheduled or confirmed)
   const upcoming = appointments
-    .filter((a) => a.appointment_date >= today && a.status !== 'cancelled')
+    .filter((a) =>
+      a.appointment_date >= today &&
+      (a.status === 'scheduled' || a.status === 'confirmed')
+    )
     .sort((a, b) => a.appointment_date.localeCompare(b.appointment_date) || a.appointment_time.localeCompare(b.appointment_time));
 
-  // Past completed
+  // Past = completed or cancelled (regardless of date)
   const pastAppointments = appointments
-    .filter((a) => a.status === 'completed' || (a.appointment_date < today && a.status !== 'cancelled'))
+    .filter((a) => a.status === 'completed' || a.status === 'cancelled' || a.status === 'no-show')
     .sort((a, b) => b.appointment_date.localeCompare(a.appointment_date));
 
   const nextAppointment = upcoming[0] ?? null;
