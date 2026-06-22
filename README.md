@@ -1,6 +1,6 @@
 <div align="center">
 
-# ⚡ MediFlow
+#  MediFlow
 
 ### Healthcare Management Platform
 
