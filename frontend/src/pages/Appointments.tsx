@@ -516,12 +516,13 @@ export const Appointments: React.FC = () => {
               )}
 
               {!loadingSlots && totalAvailable > 0 && (
-                <div className="space-y-3">
-                  {PERIODS.map(period => (
-                    <PeriodCard key={period.id} period={period} bookedSlots={bookedSlots}
-                      selectedSlot={selectedSlot} selectedDate={watchedDate} onSelect={setSelectedSlot} />
-                  ))}
-                </div>
+                <SlotPicker
+                  bookedSlots={bookedSlots}
+                  selectedSlot={selectedSlot}
+                  selectedDate={watchedDate}
+                  loading={loadingSlots}
+                  onSelect={setSelectedSlot}
+                />
               )}
 
               {selectedSlot && (
