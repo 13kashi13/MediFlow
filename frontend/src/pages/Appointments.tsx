@@ -561,22 +561,18 @@ export const Appointments: React.FC = () => {
             <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded bg-white border border-border inline-block" />Available</span>
           </div>
 
-        </form>
-        </div>
+          {/* Submit buttons INSIDE the form — prevents accidental form submission from other buttons */}
+          <div className="flex justify-end gap-3 pt-3 border-t border-border">
+            <Button type="button" variant="ghost" disabled={submitting}
+              onClick={() => { setIsModalOpen(false); reset({}); setSelectedSlot(''); }}>
+              Cancel
+            </Button>
+            <Button type="submit" isLoading={submitting} disabled={submitting || !selectedSlot}>
+              {submitting ? 'Booking…' : 'Confirm Appointment'}
+            </Button>
+          </div>
 
-        {/* Confirm buttons stay outside scroll area — always visible */}
-        <div className="flex justify-end gap-3 pt-3 border-t border-border mt-3">
-          <Button type="button" variant="ghost" disabled={submitting}
-            onClick={() => { setIsModalOpen(false); reset({}); setSelectedSlot(''); }}>
-            Cancel
-          </Button>
-          <Button
-            onClick={handleSubmit(handleBook)}
-            isLoading={submitting}
-            disabled={submitting || !selectedSlot}
-          >
-            {submitting ? 'Booking…' : 'Confirm Appointment'}
-          </Button>
+        </form>
         </div>
       </Modal>
     </div>
