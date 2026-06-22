@@ -83,15 +83,26 @@ const SlotPicker: React.FC<{
   onSelect: (slot: string) => void;
 }> = ({ bookedSlots, selectedSlot, selectedDate, loading, onSelect }) => {
   const [activeTab, setActiveTab] = useState<'morning' | 'afternoon' | 'evening'>('morning');
+  const [userPicked, setUserPicked] = useState(false); // track if user manually picked a tab
 
-  // Auto-switch to the tab containing the earliest available slot
+  // Auto-switch to earliest tab ONLY on date change, not on every poll
   useEffect(() => {
     if (!selectedDate) return;
+    setUserPicked(false); // reset on date change
+  }, [selectedDate]);
+
+  useEffect(() => {
+    if (userPicked) return; // don't override user's tab choice
     for (const p of PERIODS) {
       const hasAvail = p.slots.some(s => !bookedSlots.has(s) && !isSlotPast(s, selectedDate));
       if (hasAvail) { setActiveTab(p.id as any); return; }
     }
-  }, [selectedDate, bookedSlots]);
+  }, [selectedDate]); // Only trigger on date change, NOT on bookedSlots change
+
+  const handleTabClick = (id: 'morning' | 'afternoon' | 'evening') => {
+    setUserPicked(true);
+    setActiveTab(id);
+  };
 
   const activePeriod = PERIODS.find(p => p.id === activeTab)!;
   const Icon = activePeriod.icon;
@@ -126,7 +137,7 @@ const SlotPicker: React.FC<{
           const PIcon = p.icon;
           const isActive = activeTab === p.id;
           return (
-            <button key={p.id} type="button" onClick={() => setActiveTab(p.id as any)}
+            <button key={p.id} type="button" onClick={() => handleTabClick(p.id as any)}
               className={`flex flex-col items-center gap-0.5 py-2.5 px-2 rounded-xl transition-all duration-200 text-center
                 ${isActive ? 'bg-white shadow-sm text-text-primary' : 'text-text-secondary hover:text-text-primary'}`}>
               <PIcon className={`w-4 h-4 ${isActive ? p.color : ''}`} />
@@ -194,17 +205,7 @@ const SlotPicker: React.FC<{
         </motion.div>
       </AnimatePresence>
 
-      {/* Selected display */}
-      {selectedSlot && (
-        <motion.div initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }}
-          className="flex items-center gap-2 p-3 bg-primary-teal/10 border-2 border-primary-teal/30 rounded-xl">
-          <Clock className="w-4 h-4 text-primary-teal flex-shrink-0" />
-          <span className="text-sm font-bold text-primary-teal">Selected: {to12h(selectedSlot)}</span>
-          <button type="button" onClick={() => onSelect('')} className="ml-auto text-xs text-text-secondary hover:text-danger transition-colors">✕ Clear</button>
-        </motion.div>
-      )}
-
-      {/* Legend */}
+      {/* Legend only — no duplicate Selected bar here */}
       <div className="flex flex-wrap items-center gap-3 text-[11px] text-text-secondary pt-1">
         <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-md bg-primary-teal inline-block" />Selected</span>
         <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-md bg-red-50 border border-red-100 inline-block" />Booked</span>
