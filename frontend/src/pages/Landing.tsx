@@ -28,12 +28,23 @@ const MedicalBackdropComponent: React.FC = () => {
       {/* Abstract Grid Mesh */}
       <div className="absolute inset-0 bg-[linear-gradient(to_right,#0c2d27_1px,transparent_1px),linear-gradient(to_bottom,#0c2d27_1px,transparent_1px)] bg-[size:3rem_3rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_40%,#000_70%,transparent_100%)] opacity-35"></div>
 
-      {/* Heartbeat/ECG Pulse line animation */}
-      <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-[0.08] select-none">
-        <svg className="w-full max-w-6xl h-64 text-primary-teal" viewBox="0 0 1000 100" fill="none" stroke="currentColor" strokeWidth="2.5">
-          <path d="M 0 50 L 250 50 L 270 30 L 290 70 L 310 50 L 330 50 L 340 10 L 350 90 L 360 50 L 380 50 L 400 50 L 420 30 L 440 70 L 460 50 L 1000 50" strokeDasharray="1000" strokeDashoffset="1000">
-            <animate attributeName="stroke-dashoffset" values="1000;0" dur="9s" repeatCount="Infinity" />
+      {/* Heartbeat/ECG Pulse line animation — visible, looping, never disappears */}
+      <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none">
+        <svg className="w-full max-w-6xl h-48 text-primary-teal" viewBox="0 0 1000 100" fill="none" stroke="currentColor" strokeWidth="2">
+          {/* Static dim baseline so line is always visible */}
+          <path d="M 0 50 L 250 50 L 270 30 L 290 70 L 310 50 L 330 50 L 340 10 L 350 90 L 360 50 L 380 50 L 400 50 L 420 30 L 440 70 L 460 50 L 1000 50"
+            stroke="#2FA084" strokeOpacity="0.12" strokeWidth="1.5" />
+          {/* Bright animated pulse on top */}
+          <path d="M 0 50 L 250 50 L 270 30 L 290 70 L 310 50 L 330 50 L 340 10 L 350 90 L 360 50 L 380 50 L 400 50 L 420 30 L 440 70 L 460 50 L 1000 50"
+            stroke="#2FA084" strokeOpacity="0.55" strokeWidth="2.5"
+            strokeDasharray="1500" strokeDashoffset="1500">
+            <animate attributeName="stroke-dashoffset" values="1500;-200" dur="5s" repeatCount="indefinite" />
           </path>
+          {/* Glowing dot at the tip of the pulse */}
+          <circle r="5" fill="#6FCF97" fillOpacity="0.9">
+            <animateMotion dur="5s" repeatCount="indefinite"
+              path="M 0 50 L 250 50 L 270 30 L 290 70 L 310 50 L 330 50 L 340 10 L 350 90 L 360 50 L 380 50 L 400 50 L 420 30 L 440 70 L 460 50 L 1000 50" />
+          </circle>
         </svg>
       </div>
 
