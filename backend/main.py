@@ -109,10 +109,34 @@ def create_patient(patient: PatientCreate, user=Depends(get_current_user)):
 @patients_router.get("/")
 def get_patients(user=Depends(get_current_user)):
     if user.get("role") == "patient":
+        # Patient sees only their own profile
         res = supabase_admin.table("patients").select("*, users(*)").eq("user_id", user["id"]).execute()
+        return res.data
+
+    elif user.get("role") == "doctor":
+        # Doctor sees ONLY patients who have booked appointments with them
+        doc_res = supabase_admin.table("doctors").select("id").eq("user_id", user["id"]).execute()
+        if not doc_res.data:
+            return []
+        doctor_id = doc_res.data[0]["id"]
+        # Get patient_ids from appointments assigned to this doctor
+        appt_res = supabase_admin.table("appointments") \
+            .select("patient_id") \
+            .eq("doctor_id", doctor_id) \
+            .neq("status", "cancelled") \
+            .execute()
+        if not appt_res.data:
+            return []
+        # Deduplicate patient IDs
+        patient_ids = list({a["patient_id"] for a in appt_res.data})
+        # Fetch those specific patient profiles
+        res = supabase_admin.table("patients").select("*, users(*)").in_("id", patient_ids).execute()
+        return res.data
+
     else:
+        # Admin and receptionist see all patients
         res = supabase_admin.table("patients").select("*, users(*)").execute()
-    return res.data
+        return res.data
 
 @patients_router.patch("/{id}")
 def update_patient(id: str, patient: PatientUpdate, user=Depends(get_current_user)):
@@ -507,6 +531,13 @@ def get_medical_records(user=Depends(get_current_user)):
         pat_res = supabase_admin.table("patients").select("id").eq("user_id", user["id"]).execute()
         if pat_res.data:
             query = query.eq("patient_id", pat_res.data[0]["id"])
+        else:
+            return []
+    elif user.get("role") == "doctor":
+        # Doctor sees only records they uploaded
+        doc_res = supabase_admin.table("doctors").select("id").eq("user_id", user["id"]).execute()
+        if doc_res.data:
+            query = query.eq("doctor_id", doc_res.data[0]["id"])
         else:
             return []
     res = query.execute()
