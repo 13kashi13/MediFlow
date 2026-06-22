@@ -168,7 +168,7 @@ const SlotPicker: React.FC<{
               <p className="text-sm font-medium text-text-secondary">No slots available in this time period.</p>
             </div>
           ) : (
-            <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+            <div className="grid grid-cols-4 gap-1.5">
               {activePeriod.slots.map(slot => {
                 const booked   = bookedSlots.has(slot);
                 const past     = isSlotPast(slot, selectedDate);
@@ -181,22 +181,16 @@ const SlotPicker: React.FC<{
                     onClick={() => !disabled && onSelect(selected ? '' : slot)}
                     title={past ? 'Time has passed' : booked ? 'Already booked' : to12h(slot)}
                     className={`
-                      relative py-3 px-2 text-xs font-semibold rounded-xl border-2 transition-all duration-150 select-none
+                      relative py-2 px-1 text-[11px] font-semibold rounded-lg border transition-all duration-150 select-none
                       ${selected
-                        ? 'bg-primary-teal border-primary-teal text-white shadow-lg shadow-primary-teal/25'
+                        ? 'bg-primary-teal border-primary-teal text-white shadow-md shadow-primary-teal/25'
                         : past
                           ? 'bg-gray-50 border-gray-100 text-gray-300 cursor-not-allowed'
                           : booked
                             ? 'bg-red-50 border-red-100 text-red-300 cursor-not-allowed'
-                            : 'bg-white border-gray-200 text-text-primary hover:border-primary-teal hover:shadow-sm hover:text-primary-teal cursor-pointer'
+                            : 'bg-white border-gray-200 text-text-primary hover:border-primary-teal hover:text-primary-teal cursor-pointer'
                       }`}>
                     {to12h(slot)}
-                    {booked && !past && (
-                      <span className="absolute -top-1 -right-1 w-2 h-2 bg-red-400 rounded-full" />
-                    )}
-                    {selected && (
-                      <span className="absolute -top-1 -right-1 w-2 h-2 bg-white rounded-full border-2 border-primary-teal" />
-                    )}
                   </motion.button>
                 );
               })}
@@ -454,8 +448,9 @@ export const Appointments: React.FC = () => {
       {/* ── BOOK APPOINTMENT MODAL ──────────────────────────────── */}
       <Modal isOpen={isModalOpen}
         onClose={() => { if (!submitting) { setIsModalOpen(false); reset({}); setSelectedSlot(''); } }}
-        title="Book an Appointment" size="xl">
-        <form onSubmit={handleSubmit(handleBook)} className="space-y-5">
+        title="Book an Appointment" size="lg">
+        <div className="overflow-y-auto max-h-[70vh] pr-1">
+        <form onSubmit={handleSubmit(handleBook)} className="space-y-4">
 
           {/* Step 1 — Patient (hidden for patients) */}
           {user?.role !== 'patient' && (
@@ -559,22 +554,30 @@ export const Appointments: React.FC = () => {
           </div>
 
           {/* Legend */}
-          <div className="flex flex-wrap items-center gap-4 text-xs text-text-secondary pt-1 border-t border-border">
-            <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-md bg-primary-teal inline-block" />Selected</span>
-            <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-md bg-red-100 inline-block border border-red-200" />Booked</span>
-            <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-md bg-gray-50 inline-block border border-gray-100" />Past</span>
-            <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-md bg-white inline-block border border-border" />Available</span>
+          <div className="flex flex-wrap items-center gap-3 text-[11px] text-text-secondary">
+            <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded bg-primary-teal inline-block" />Selected</span>
+            <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded bg-red-100 border border-red-200 inline-block" />Booked</span>
+            <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded bg-gray-50 border border-gray-200 inline-block" />Past</span>
+            <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded bg-white border border-border inline-block" />Available</span>
           </div>
 
-          <div className="flex justify-end gap-3 pt-2 border-t border-border">
-            <Button type="button" variant="ghost" disabled={submitting} onClick={() => { setIsModalOpen(false); reset({}); setSelectedSlot(''); }}>
-              Cancel
-            </Button>
-            <Button type="submit" isLoading={submitting} disabled={submitting || !selectedSlot}>
-              {submitting ? 'Booking…' : 'Confirm Appointment'}
-            </Button>
-          </div>
         </form>
+        </div>
+
+        {/* Confirm buttons stay outside scroll area — always visible */}
+        <div className="flex justify-end gap-3 pt-3 border-t border-border mt-3">
+          <Button type="button" variant="ghost" disabled={submitting}
+            onClick={() => { setIsModalOpen(false); reset({}); setSelectedSlot(''); }}>
+            Cancel
+          </Button>
+          <Button
+            onClick={handleSubmit(handleBook)}
+            isLoading={submitting}
+            disabled={submitting || !selectedSlot}
+          >
+            {submitting ? 'Booking…' : 'Confirm Appointment'}
+          </Button>
+        </div>
       </Modal>
     </div>
   );
