@@ -648,10 +648,10 @@ export const Landing: React.FC = () => {
   ];
 
   const stats = [
-    { value: '50K+', label: 'Active Patients' },
-    { value: '2,500+', label: 'Healthcare Providers' },
-    { value: '98%', label: 'Satisfaction Rate' },
-    { value: '24/7', label: 'Support Available' },
+    { value: '24/7', label: 'Platform Available' },
+    { value: 'Real-Time', label: 'Appointment Booking' },
+    { value: 'Digital', label: 'Prescriptions' },
+    { value: 'Secure', label: 'Health Records' },
   ];
 
   const testimonials = [
@@ -681,72 +681,40 @@ export const Landing: React.FC = () => {
   const partners = ['Apollo', 'Max Healthcare', 'Fortis', 'Medanta', 'AIIMS', 'Manipal'];
 
   return (
-    <div className="min-h-screen bg-white text-text-primary">
+    <div className="min-h-screen bg-[#050e0c] text-white">
       {/* Navbar */}
       <nav
         className={`fixed top-0 w-full z-50 transition-all duration-300 ${
-          scrolled ? 'bg-white shadow-sm border-b border-border/40' : 'bg-black/35 backdrop-blur-md'
+          scrolled ? 'bg-[#071613]/95 backdrop-blur-md shadow-lg border-b border-white/5' : 'bg-black/35 backdrop-blur-md'
         }`}
       >
         <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Activity className={`w-8 h-8 ${scrolled ? 'text-primary-teal' : 'text-white'}`} />
-            <span className={`text-2xl font-bold tracking-tight ${scrolled ? 'text-primary-teal' : 'text-white'}`}>
+            <Activity className="w-8 h-8 text-primary-teal" />
+            <span className="text-2xl font-bold tracking-tight text-white">
               MediFlow
             </span>
           </div>
           
           <div className="hidden md:flex items-center gap-8">
-            <a 
-              href="#features" 
-              className={`text-sm font-semibold transition-colors ${
-                scrolled 
-                  ? 'text-text-secondary hover:text-primary-teal' 
-                  : 'text-white/85 hover:text-white'
-              }`}
-            >
+            <a href="#features" className="text-sm font-semibold text-white/80 hover:text-white transition-colors">
               Features
             </a>
-            <a 
-              href="#how-it-works" 
-              className={`text-sm font-semibold transition-colors ${
-                scrolled 
-                  ? 'text-text-secondary hover:text-primary-teal' 
-                  : 'text-white/85 hover:text-white'
-              }`}
-            >
+            <a href="#how-it-works" className="text-sm font-semibold text-white/80 hover:text-white transition-colors">
               How It Works
-            </a>
-            <a 
-              href="#testimonials" 
-              className={`text-sm font-semibold transition-colors ${
-                scrolled 
-                  ? 'text-text-secondary hover:text-primary-teal' 
-                  : 'text-white/85 hover:text-white'
-              }`}
-            >
-              Testimonials
             </a>
           </div>
 
           <div className="flex items-center gap-4">
             <button
               onClick={() => navigate('/login')}
-              className={`text-sm font-bold transition-colors ${
-                scrolled 
-                  ? 'text-text-primary hover:text-primary-teal' 
-                  : 'text-white hover:text-primary-green'
-              }`}
+              className="text-sm font-bold text-white/80 hover:text-white transition-colors"
             >
               Sign In
             </button>
             <button
               onClick={() => navigate('/register')}
-              className={`px-5 py-2.5 text-sm font-bold rounded-xl transition-colors ${
-                scrolled
-                  ? 'bg-primary-teal text-white hover:bg-primary-dark-teal'
-                  : 'bg-white text-primary-teal hover:bg-white/90 shadow-md'
-              }`}
+              className="px-5 py-2.5 text-sm font-bold rounded-xl bg-primary-teal text-white hover:bg-primary-dark-teal transition-colors shadow-md"
             >
               Get Started
             </button>
@@ -791,18 +759,15 @@ export const Landing: React.FC = () => {
                     Schedule, confirm, and consult in real-time. Link patient attendance instantly with waiting rooms, track live stats, and distribute prescriptions dynamically.
                   </p>
 
-                  {/* Integrated Live Clinic Stats Grid */}
+                  {/* Platform highlights — no fake numbers */}
                   <div className="grid grid-cols-2 gap-3.5 max-w-md pt-1.5">
                     {[
-                      { label: 'Verified Doctors', value: '250+ Active', desc: 'Specialists on call today', color: 'text-primary-teal', icon: <Stethoscope className="w-3.5 h-3.5 text-primary-teal" /> },
-                      { label: 'Patient Satisfaction', value: '98.4% Rating', desc: 'From check-out feedback', color: 'text-primary-green', icon: <Heart className="w-3.5 h-3.5 text-primary-green" /> },
-                      { label: 'Digital Prescriptions', value: '340+ Daily', desc: 'Dispatched electronically', color: 'text-primary-teal', icon: <FileText className="w-3.5 h-3.5 text-primary-teal" /> },
-                      { label: 'Compliance Status', value: 'HIPAA Verified', desc: 'Secured health networks', color: 'text-primary-green', icon: <ShieldCheck className="w-3.5 h-3.5 text-primary-green" /> },
+                      { label: 'Appointment Booking', value: 'Real-Time', desc: 'Instant slot confirmation', color: 'text-primary-teal', icon: <Calendar className="w-3.5 h-3.5 text-primary-teal" /> },
+                      { label: 'Support', value: '24/7', desc: 'Always available platform', color: 'text-primary-green', icon: <Clock className="w-3.5 h-3.5 text-primary-green" /> },
+                      { label: 'Prescriptions', value: 'Digital', desc: 'Issued & tracked online', color: 'text-primary-teal', icon: <FileText className="w-3.5 h-3.5 text-primary-teal" /> },
+                      { label: 'Data Security', value: 'Encrypted', desc: 'End-to-end secured records', color: 'text-primary-green', icon: <Shield className="w-3.5 h-3.5 text-primary-green" /> },
                     ].map((stat, idx) => (
-                      <div
-                        key={idx}
-                        className="p-3 bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl flex flex-col justify-between shadow-sm"
-                      >
+                      <div key={idx} className="p-3 bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl flex flex-col justify-between shadow-sm">
                         <div className="flex justify-between items-start">
                           <div>
                             <span className="text-[9px] text-white/50 block font-semibold uppercase tracking-wider">{stat.label}</span>
@@ -873,13 +838,13 @@ export const Landing: React.FC = () => {
       </section>
 
       {/* Stats Section */}
-      <section className="py-12 bg-primary-secondary/40 border-y border-border/40">
+      <section className="py-12 bg-[#071613]/80 border-y border-white/5">
         <div className="max-w-7xl mx-auto px-6">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
             {stats.map((stat, idx) => (
               <div key={idx} className="text-center">
                 <div className="text-3xl font-extrabold text-primary-teal">{stat.value}</div>
-                <div className="text-xs text-text-secondary mt-1 font-semibold uppercase tracking-wider">{stat.label}</div>
+                <div className="text-xs text-white/50 mt-1 font-semibold uppercase tracking-wider">{stat.label}</div>
               </div>
             ))}
           </div>
@@ -889,10 +854,10 @@ export const Landing: React.FC = () => {
       {/* Features Section */}
       <section id="features" className="py-20 px-6 max-w-7xl mx-auto">
         <div className="text-center mb-14">
-          <h2 className="text-3xl font-extrabold text-text-primary tracking-tight">
+          <h2 className="text-3xl font-extrabold text-white tracking-tight">
             Integrated Workspace Modules
           </h2>
-          <p className="text-base text-text-secondary max-w-xl mx-auto mt-2">
+          <p className="text-base text-white/50 max-w-xl mx-auto mt-2">
             Tailored interfaces for patients, doctors, and front-desk receptionists.
           </p>
         </div>
@@ -901,24 +866,24 @@ export const Landing: React.FC = () => {
           {features.map((feature, idx) => (
             <div
               key={idx}
-              className="p-6 bg-white border border-border/80 rounded-2xl shadow-[0_4px_12px_rgba(0,0,0,0.015)] hover:shadow-md transition-shadow"
+              className="p-6 bg-white/5 border border-white/10 rounded-2xl hover:bg-white/8 hover:border-primary-teal/30 transition-all"
             >
-              <div className="w-11 h-11 bg-primary-teal/10 rounded-xl flex items-center justify-center mb-4 text-primary-teal border border-primary-teal/5">
+              <div className="w-11 h-11 bg-primary-teal/10 rounded-xl flex items-center justify-center mb-4 text-primary-teal border border-primary-teal/10">
                 {feature.icon}
               </div>
-              <h3 className="text-base font-bold text-text-primary mb-1.5">{feature.title}</h3>
-              <p className="text-xs text-text-secondary leading-relaxed font-medium">{feature.description}</p>
+              <h3 className="text-base font-bold text-white mb-1.5">{feature.title}</h3>
+              <p className="text-xs text-white/50 leading-relaxed font-medium">{feature.description}</p>
             </div>
           ))}
         </div>
       </section>
 
       {/* How It Works */}
-      <section id="how-it-works" className="py-20 px-6 bg-primary-secondary/30 border-y border-border/40">
+      <section id="how-it-works" className="py-20 px-6 bg-[#071613]/60 border-y border-white/5">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-14">
-            <h2 className="text-3xl font-extrabold text-text-primary tracking-tight">Workflows in Action</h2>
-            <p className="text-base text-text-secondary mt-1.5">How MediFlow keeps your clinic in sync</p>
+            <h2 className="text-3xl font-extrabold text-white tracking-tight">Workflows in Action</h2>
+            <p className="text-base text-white/50 mt-1.5">How MediFlow keeps your clinic in sync</p>
           </div>
 
           <div className="grid md:grid-cols-3 gap-8">
@@ -928,9 +893,9 @@ export const Landing: React.FC = () => {
               { step: '03', title: 'Consult & Prescribe', desc: 'Doctors start visits, view patient profiles, and submit prescriptions directly.' },
             ].map((item, idx) => (
               <div key={idx} className="relative">
-                <div className="text-5xl font-extrabold text-primary-teal/15 mb-3">{item.step}</div>
-                <h3 className="text-lg font-bold text-text-primary mb-1.5">{item.title}</h3>
-                <p className="text-xs text-text-secondary leading-relaxed font-medium">{item.desc}</p>
+                <div className="text-5xl font-extrabold text-primary-teal/20 mb-3">{item.step}</div>
+                <h3 className="text-lg font-bold text-white mb-1.5">{item.title}</h3>
+                <p className="text-xs text-white/50 leading-relaxed font-medium">{item.desc}</p>
                 {idx < 2 && (
                   <ArrowRight className="hidden md:block absolute top-8 -right-4 w-6 h-6 text-primary-teal/20" />
                 )}
@@ -940,61 +905,16 @@ export const Landing: React.FC = () => {
         </div>
       </section>
 
-      {/* Testimonials */}
-      <section id="testimonials" className="py-20 px-6 max-w-7xl mx-auto">
-        <div className="text-center mb-14">
-          <h2 className="text-3xl font-extrabold text-text-primary tracking-tight">Approved by Clinical Teams</h2>
-          <p className="text-base text-text-secondary mt-1.5">Here is what practitioners and patients say</p>
-        </div>
+      {/* Testimonials section removed — no fake reviews */}
 
-        <div className="grid md:grid-cols-3 gap-6">
-          {testimonials.map((test, idx) => (
-            <div
-              key={idx}
-              className="p-6 bg-white border border-border/80 rounded-2xl shadow-[0_4px_12px_rgba(0,0,0,0.01)] flex flex-col justify-between"
-            >
-              <div>
-                <div className="flex gap-0.5 mb-4">
-                  {[...Array(test.rating)].map((_, i) => (
-                    <Star key={i} className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
-                  ))}
-                </div>
-                <p className="text-xs text-text-secondary mb-6 leading-relaxed italic font-medium">"{test.content}"</p>
-              </div>
-              <div className="flex items-center gap-3 pt-3 border-t border-border/40">
-                <div className="w-9 h-9 rounded-full bg-primary-teal text-white flex items-center justify-center font-bold text-xs shadow-sm">
-                  {test.avatar}
-                </div>
-                <div>
-                  <div className="font-bold text-text-primary text-xs">{test.name}</div>
-                  <div className="text-[10px] text-text-secondary font-semibold uppercase tracking-wider">{test.role}</div>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* Partners */}
-      <section className="py-12 bg-primary-secondary/30 border-y border-border/40">
-        <div className="max-w-7xl mx-auto px-6 text-center">
-          <p className="text-xs font-semibold text-text-secondary uppercase tracking-widest mb-6">Trusted Network Providers</p>
-          <div className="flex flex-wrap justify-center items-center gap-x-12 gap-y-6">
-            {partners.map((partner, idx) => (
-              <div key={idx} className="text-lg font-extrabold text-text-primary/25">
-                {partner}
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
+      {/* Partners section removed — no fake partner logos */}
 
       {/* Final CTA */}
       <section className="py-16 px-6 max-w-4xl mx-auto text-center space-y-6">
-        <h2 className="text-3xl font-extrabold text-text-primary tracking-tight">
+        <h2 className="text-3xl font-extrabold text-white tracking-tight">
           Ready to Experience Smart Healthcare?
         </h2>
-        <p className="text-sm text-text-secondary max-w-md mx-auto">
+        <p className="text-sm text-white/50 max-w-md mx-auto">
           Start streamlining consultations and front-desk schedules with MediFlow today.
         </p>
         <button
@@ -1007,7 +927,7 @@ export const Landing: React.FC = () => {
       </section>
 
       {/* Footer */}
-      <footer className="bg-text-primary text-white py-12 px-6 border-t border-border/20">
+      <footer className="bg-[#020605] text-white py-12 px-6 border-t border-white/5">
         <div className="max-w-7xl mx-auto">
           <div className="grid md:grid-cols-4 gap-8 mb-8">
             <div className="space-y-3">
@@ -1015,36 +935,33 @@ export const Landing: React.FC = () => {
                 <Activity className="w-6 h-6 text-primary-teal" />
                 <span className="text-lg font-bold tracking-tight">MediFlow</span>
               </div>
-              <p className="text-xs text-gray-400 leading-relaxed font-medium">
-                HIPAA compliant clinical workflow dashboard for modern healthcare practitioners, patients, and front-desk teams.
+              <p className="text-xs text-white/30 leading-relaxed font-medium">
+                A clinical workflow platform for modern healthcare practitioners, patients, and front-desk teams.
               </p>
             </div>
             <div>
               <h4 className="text-xs font-bold uppercase tracking-wider mb-3 text-primary-teal">Product</h4>
-              <ul className="space-y-2 text-xs text-gray-400 font-semibold">
+              <ul className="space-y-2 text-xs text-white/40 font-semibold">
                 <li><a href="#features" className="hover:text-white transition-colors">Features</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Pricing Options</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">HIPAA compliance</a></li>
+                <li><a href="#how-it-works" className="hover:text-white transition-colors">How It Works</a></li>
               </ul>
             </div>
             <div>
-              <h4 className="text-xs font-bold uppercase tracking-wider mb-3 text-primary-teal">Company</h4>
-              <ul className="space-y-2 text-xs text-gray-400 font-semibold">
-                <li><a href="#" className="hover:text-white transition-colors">About Us</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Contact Support</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Careers</a></li>
+              <h4 className="text-xs font-bold uppercase tracking-wider mb-3 text-primary-teal">Platform</h4>
+              <ul className="space-y-2 text-xs text-white/40 font-semibold">
+                <li><a href="/login" className="hover:text-white transition-colors">Sign In</a></li>
+                <li><a href="/register" className="hover:text-white transition-colors">Get Started</a></li>
               </ul>
             </div>
             <div>
-              <h4 className="text-xs font-bold uppercase tracking-wider mb-3 text-primary-teal">Legal info</h4>
-              <ul className="space-y-2 text-xs text-gray-400 font-semibold">
-                <li><a href="#" className="hover:text-white transition-colors">Privacy Policy</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Terms of Service</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">System Status</a></li>
+              <h4 className="text-xs font-bold uppercase tracking-wider mb-3 text-primary-teal">Support</h4>
+              <ul className="space-y-2 text-xs text-white/40 font-semibold">
+                <li><span className="text-white/30">Available 24/7</span></li>
+                <li><span className="text-white/30">Data encrypted</span></li>
               </ul>
             </div>
           </div>
-          <div className="border-t border-gray-800 pt-8 text-center text-xs text-gray-500 font-semibold">
+          <div className="border-t border-white/5 pt-8 text-center text-xs text-white/20 font-semibold">
             <p>© 2026 MediFlow. All rights reserved.</p>
           </div>
         </div>
